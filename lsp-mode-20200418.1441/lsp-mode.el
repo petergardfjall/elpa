@@ -671,6 +671,7 @@ Changes take effect only when a new session is started."
                                         (nim-mode . "nim")
                                         (dhall-mode . "dhall")
                                         (cmake-mode . "cmake")
+                                        (purescript-mode . "purescript")
                                         (gdscript-mode . "gdscript")
                                         (perl-mode . "perl")
                                         (robot-mode . "robot"))
@@ -1497,6 +1498,73 @@ PARAMS - the data sent from WORKSPACE."
     (if choices
         (completing-read (concat message " ") (seq-into choices 'list) nil t)
       (lsp-log message))))
+
+(defun lsp--on-progress (workspace params)
+  "Callback for $/progress.
+type ProgressToken = number | string;
+interface ProgressParams<T> {
+    token: ProgressToken;
+    value: T;
+}
+PARAMS contains the progress data.
+WORKSPACE is the workspace that contains the progress token."
+   (let* ((token (gethash "token" params))
+          (value (gethash "value" params))
+          (kind (gethash "kind" value)))
+     (lsp-log "progress: %s-%S" token kind)
+     (pcase kind
+
+       ("begin"
+        (let* ((message (gethash "title" value))
+               (cur (gethash "percentage" value 0))
+               (reporter
+                (make-progress-reporter message 0 100 cur)))
+          (lsp-workspace-set-work-done-token token reporter workspace)))
+
+       ("report"
+        (let ((reporter (lsp-workspace-get-work-done-token token workspace)))
+          (progress-reporter-update reporter (gethash "percentage" value 0))))
+
+       ("end"
+        (let ((reporter (lsp-workspace-get-work-done-token token workspace)))
+          (progress-reporter-done reporter)
+          (lsp-workspace-rem-work-done-token token workspace))))))
+
+;; [Trace - 09:56:09 ] Received notification '$/progress'.
+;; Params: {
+;;   "value": {
+;;     "title": "Indexing OTP",
+;;     "percentage": 0,
+;;     "message": "0 / 48",
+;;     "kind": "begin",
+;;     "cancellable": null
+;;   },
+;;   "token": "42ad4130-5233-4c4d-80d0-affd5bb91b8e"
+;; }
+
+;; [Trace - 09:56:09 ] Received notification '$/progress'.
+;; Params: {
+;;   "value": {
+;;     "percentage": 0,
+;;     "message": "0 / 3",
+;;     "kind": "report",
+;;     "cancellable": null
+;;   },
+;;   "token": "316247a1-b8c5-4997-a301-a31c79435fa7"
+;; }
+
+
+;; [Trace - 09:56:09 ] Received notification '$/progress'.
+;; Params: {
+;;   "value": {
+;;     "message": "0 / 0",
+;;     "kind": "end"
+;;   },
+;;   "token": "fb173466-811b-4555-976c-4aedd806babd"
+;; }
+
+
+
 
 (defun lsp-diagnostics (&optional current-workspace?)
   "Return the diagnostics from all workspaces."
@@ -2532,7 +2600,12 @@ BINDINGS is a list of (key def cond)."
   shutdown-action
 
   ;; ‘diagnostics’ a hashmap with workspace diagnostics.
-  (diagnostics (make-hash-table :test 'equal)))
+  (diagnostics (make-hash-table :test 'equal))
+ 
+  ;; contains all the workDone progress tokens that have been created
+  ;; for the current workspace.
+  (work-done-tokens (make-hash-table :test 'equal)))
+
 
 (cl-defstruct lsp-session
   ;; contains the folders that are part of the current session
@@ -2567,6 +2640,25 @@ If WORKSPACE is not provided current workspace will be used."
   (gethash key (lsp-session-metadata (lsp-session))))
 
 (defalias 'lsp-workspace-get-metadata 'lsp-session-get-metadata)
+
+(defun lsp-workspace-set-work-done-token (token value &optional workspace)
+  "Associate TOKEN with VALUE in the WORKSPACE work-done-tokens.
+If WORKSPACE is not provided current workspace will be used."
+  (puthash token value
+           (lsp--workspace-work-done-tokens (or workspace lsp--cur-workspace))))
+
+(defun lsp-workspace-get-work-done-token (token &optional workspace)
+  "Lookup TOKEN in the WORKSPACE work-done-tokens.
+If WORKSPACE is not provided current workspace will be used."
+  (gethash token
+           (lsp--workspace-work-done-tokens (or workspace lsp--cur-workspace))))
+
+(defun lsp-workspace-rem-work-done-token (token &optional workspace)
+  "Remove TOKEN from the WORKSPACE work-done-tokens.
+If WORKSPACE is not provided current workspace will be used."
+  (remhash token
+           (lsp--workspace-work-done-tokens (or workspace lsp--cur-workspace))))
+
 
 (defun lsp--make-notification (method &optional params)
   "Create notification body for method METHOD and parameters PARAMS."
@@ -2878,6 +2970,11 @@ If NO-MERGE is non-nil, don't merge the results but return alist workspace->resu
                                            local))
                                         hooks)))
                               (remhash cancel-token lsp--cancelable-requests)))
+             (callback (pcase mode
+                         ((or 'alive 'tick) (lambda (&rest args)
+                                              (with-current-buffer buf
+                                                (apply callback args))))
+                         (_ callback)))
              (callback (lsp--create-async-callback callback
                                                    method
                                                    no-merge
@@ -3009,8 +3106,10 @@ disappearing, unset all the variables related to it."
                       (hover . ((contentFormat . ["markdown" "plaintext"])))
                       (foldingRange . ,(when lsp-enable-folding
                                          `((dynamicRegistration . t)
-                                           (rangeLimit . ,lsp-folding-range-limit)
-                                           (lineFoldingOnly . ,(or lsp-folding-line-folding-only :json-false)))))
+                                           ,@(when lsp-folding-range-limit
+                                               `((rangeLimit . ,lsp-folding-range-limit)))
+                                           ,@(when lsp-folding-line-folding-only
+                                               `((lineFoldingOnly . t))))))
                       (callHierarchy . ((dynamicRegistration . :json-false)))
                       (publishDiagnostics . ((relatedInformation . t)
                                              (tagSupport . ((valueSet . [1 2])))
@@ -3475,9 +3574,8 @@ in that particular folder."
     (when-let (changes (gethash "changes" edit))
       (maphash
        (lambda (uri text-edits)
-         (let ((filename (lsp--uri-to-path uri)))
-           (with-current-buffer (find-file-noselect filename)
-             (lsp--apply-text-edits text-edits))))
+         (with-current-buffer (-> uri lsp--uri-to-path find-file-noselect)
+           (lsp--apply-text-edits text-edits)))
        changes))))
 
 (defun lsp--apply-text-document-edit (edit)
@@ -3558,12 +3656,21 @@ interface TextDocumentEdit {
     (delete-region start end)
     (insert newText)))
 
+
+;; WORKAROUND: typescript-language might send -1 when applying code actions.
+;; see https://github.com/emacs-lsp/lsp-mode/issues/1582
+(defun lsp--fix-point (point)
+  (-let [(&hash "character" "line") point]
+    (ht ("line" (max 0 line))
+        ("character" (max 0 character)))))
+
 (defun lsp--apply-text-edit-replace-buffer-contents (text-edit)
   "Apply the edits described in the TextEdit object in TEXT-EDIT.
 The method uses `replace-buffer-contents'."
-  (-let* (((&hash "newText" "range") text-edit)
+  (-let* (((&hash "newText" "range" (&hash "start" "end")) text-edit)
           (source (current-buffer))
-          ((beg . end) (lsp--range-to-region range)))
+          ((beg . end) (lsp--range-to-region (ht ("start" (lsp--fix-point start))
+                                                 ("end" (lsp--fix-point end))))))
     (with-temp-buffer
       (insert newText)
       (let ((temp (current-buffer)))
@@ -3601,7 +3708,7 @@ The method uses `replace-buffer-contents'."
                              (prepare-change-group)))
              (howmany (length edits))
              (message (format "Applying %s edits to `%s' ..." howmany (current-buffer)))
-             (_ (message message))
+             (_ (lsp--info message))
              (reporter (make-progress-reporter message 0 howmany))
              (done 0)
              (apply-edit (if (functionp 'replace-buffer-contents)
@@ -4599,24 +4706,25 @@ When language is nil render as markup if `markdown-mode' is loaded."
 
 (defun lsp--render-element (content)
   "Render CONTENT element."
-  ;; MarkedString
-  (or
-   (cond
-    ((and (hash-table-p content)
-          (gethash "language" content))
-     (-let [(&hash "language" "value") content]
-       (lsp--render-string value language)))
+  (let ((inhibit-message t))
+    (or
+     (cond
+      ;; MarkedString
+      ((and (hash-table-p content)
+            (gethash "language" content))
+       (-let [(&hash "language" "value") content]
+         (lsp--render-string value language)))
 
-    ;; MarkupContent
-    ((and (hash-table-p content)
-          (gethash "kind" content))
-     (-let [(&hash "value" "kind") content]
-       (lsp--render-string value kind)))
-    ;; plain string
-    ((stringp content) (lsp--render-string content "markdown"))
-    ((null content) "")
-    (t (error "Failed to handle %s" content)))
-   ""))
+      ;; MarkupContent
+      ((and (hash-table-p content)
+            (gethash "kind" content))
+       (-let [(&hash "value" "kind") content]
+         (lsp--render-string value kind)))
+      ;; plain string
+      ((stringp content) (lsp--render-string content "markdown"))
+      ((null content) "")
+      (t (error "Failed to handle %s" content)))
+     "")))
 
 (defun lsp--select-action (actions)
   "Select an action to execute from ACTIONS."
@@ -4942,9 +5050,8 @@ It will show up only if current point has signature help."
         :range (if (use-region-p)
                    (lsp--region-to-range (region-beginning) (region-end))
                  (lsp--region-to-range (point) (point)))
-        :context (list
-                  :diagnostics (lsp-cur-line-diagnostics)
-                  :only (when kind (vector kind)))))
+        :context `(:diagnostics ,(lsp-cur-line-diagnostics)
+                                ,@(when kind (list :only (vector kind))))))
 
 (defun lsp-code-actions-at-point (&optional kind)
   "Retrieve the code actions for the active region or the current line."
@@ -5717,7 +5824,8 @@ textDocument/didOpen for the new file."
       ("textDocument/semanticHighlighting" #'lsp--on-semantic-highlighting)
       ("textDocument/diagnosticsEnd" #'ignore)
       ("textDocument/diagnosticsBegin" #'ignore)
-      ("telemetry/event" #'ignore)))
+      ("telemetry/event" #'ignore)
+      ("$/progress" #'lsp--on-progress)))
 
 (defun lsp--on-notification (workspace notification)
   "Call the appropriate handler for NOTIFICATION."
@@ -5804,8 +5912,7 @@ WORKSPACE is the active workspace."
                                      (list :uri (lsp--path-to-uri folder))))
                              (apply #'vector))))
                      ((string= method "window/workDoneProgress/create")
-                      ;; Ignoring for now
-                      nil
+                      nil ;; no specific reply, no processing required
                       )
                      (t (lsp-warn "Unknown request method: %s" method) nil))))
     ;; Send response to the server.

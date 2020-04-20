@@ -303,8 +303,8 @@ there is a .flowconfig file in the folder hierarchy."
   "Check if the Flow language server should be enabled for a
 particular FILE-NAME and MODE."
   (and (derived-mode-p 'js-mode 'web-mode 'js2-mode 'flow-js2-mode 'rjsx-mode)
-       (lsp-clients-flow-project-p file-name)
-       (lsp-clients-flow-tag-file-present-p file-name)))
+       (or (lsp-clients-flow-project-p file-name)
+	   (lsp-clients-flow-tag-file-present-p file-name))))
 
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection (lambda ()
@@ -693,11 +693,11 @@ responsiveness at the cost of possible stability issues."
 
 ;; Vim script
 (defgroup lsp-vim nil
-  "LSP support for TeX and friends, using Digestif."
+  "LSP support for viml using vim-language-server"
   :group 'lsp-mode)
 
 (defcustom lsp-clients-vim-executable '("vim-language-server" "--stdio")
-  "Command to start the Digestif language server."
+  "Command to start the vim language server."
   :group 'lsp-vim
   :risky t
   :type 'file)
@@ -829,6 +829,38 @@ responsiveness at the cost of possible stability issues."
                   :major-modes '(cmake-mode)
                   :priority -1
                   :server-id 'cmakels))
+
+;; PureScript
+(defgroup lsp-purescript nil
+  "LSP support for PureScript, using purescript-language-server."
+  :group 'lsp-mode
+  :link '(url-link "https://github.com/nwolverson/purescript-language-server"))
+
+(defcustom lsp-purescript-server-executable
+  "purescript-language-server"
+  "Arguments to pass to the server."
+  :type 'string
+  :risky t
+  :group 'lsp-purescript)
+
+(defcustom lsp-purescript-server-args
+  '("--stdio")
+  "Arguments to pass to the server."
+  :type '(repeat string)
+  :risky t
+  :group 'lsp-purescript)
+
+(defun lsp-purescript--server-command ()
+  "Generate LSP startup command for purescript-language-server."
+  (cons lsp-purescript-server-executable
+        lsp-purescript-server-args))
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection
+                                   #'lsp-purescript--server-command)
+                  :major-modes '(purescript-mode)
+                  :priority -1
+                  :server-id 'pursls))
 
 ;;; Rf
 (defgroup lsp-rf nil
