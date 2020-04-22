@@ -4,7 +4,7 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (pfuture "1.3" ) (magit "2.90.0"))
-;; Package-Version: 20200302.553
+;; Package-Version: 20200421.1426
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -80,8 +80,8 @@ filewatch-mode's mechanics to update the entire project."
 (defun treemacs-magit--extended-git-mode-update (magit-root)
   "Update the project at the given MAGIT-ROOT.
 This runs due to a commit or stash action, so we know that no files have
-actually been added or deleted. This allows us to forego rebuilding the entire
-project structure just to be sure we caught everything. Instead we grab the
+actually been added or deleted.  This allows us to forego rebuilding the entire
+project structure just to be sure we caught everything.  Instead we grab the
 current git status and just go through the lines as they are right now."
   ;; we run a single git process to update every buffer, so we need to gather
   ;; the visible dirs in every buffer
