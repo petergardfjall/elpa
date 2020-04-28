@@ -176,7 +176,7 @@ the buffer when it becomes large."
  If `lsp-semantic-highlighting' is set to `:immediate', semantic
  highlighting information received from the language server is
  applied immediately, and in full. If `lsp-semantic-highlighting'
- is set to `:deferred', semantic higlighting will be performed
+ is set to `:deferred', semantic highlighting will be performed
  after an idle timeout, and only within a limit region
  around `(point)' (see
  `lsp-semantic-highlighting-context-lines'). Compared to
@@ -1582,7 +1582,7 @@ WORKSPACE is the workspace that contains the progress token."
   :package-version '(lsp-mode . "6.3"))
 
 (defun lsp--diagnostics-modeline-statistics ()
-  "Caculate diagnostics statistics based on `lsp-diagnostics-modeline-scope'"
+  "Calculate diagnostics statistics based on `lsp-diagnostics-modeline-scope'"
   (let ((diagnostics (cond
                       ((equal :file lsp-diagnostics-modeline-scope)
                        (lsp--get-buffer-diagnostics))
@@ -2336,70 +2336,75 @@ BINDINGS is a list of (key def cond)."
 ;; which-key integration
 
 (declare-function which-key-add-major-mode-key-based-replacements "ext:which-key")
+(declare-function which-key-add-key-based-replacements "ext:which-key")
 
-(defun lsp-enable-which-key-integration ()
-  (apply
-   #'which-key-add-major-mode-key-based-replacements
-   major-mode
-   (lsp--prepend-prefix
-    (list
-     ""    "lsp"
-     "s"   "sessions"
-     "s s" "start server"
-     "s r" "restart server"
-     "s q" "shutdown server"
-     "s d" "describe session"
-     "s D" "disconnect"
+(defun lsp-enable-which-key-integration (&optional all-modes)
+  "Adds descriptions for `lsp-mode-map' to `which-key-mode' for the current
+active `major-mode', or for all major modes when ALL-MODES is t."
+  (cl-flet ((which-key-fn (if all-modes
+                              'which-key-add-key-based-replacements
+                            (apply-partially 'which-key-add-major-mode-key-based-replacements major-mode))))
+    (apply
+     #'which-key-fn
+     (lsp--prepend-prefix
+      (list
+       ""    "lsp"
+       "s"   "sessions"
+       "s s" "start server"
+       "s r" "restart server"
+       "s q" "shutdown server"
+       "s d" "describe session"
+       "s D" "disconnect"
 
-     "F"   "folders"
-     "F a" "add folder"
-     "F r" "remove folder"
-     "F b" "un-blacklist folder"
+       "F"   "folders"
+       "F a" "add folder"
+       "F r" "remove folder"
+       "F b" "un-blacklist folder"
 
-     "="   "formatting"
-     "= r" "format region"
-     "= =" "format buffer"
+       "="   "formatting"
+       "= r" "format region"
+       "= =" "format buffer"
 
-     "T"   "toggle"
-     "T l" "toggle lenses"
-     "T h" "toggle highlighting"
-     "T L" "toggle log io"
-     "T s" "toggle signature"
-     "T S" "toggle sideline"
-     "T d" "toggle documentation popup"
-     "T p" "toggle signature help"
-     "T f" "toggle on type formatting"
-     "T T" "toggle treemacs integration"
+       "T"   "toggle"
+       "T l" "toggle lenses"
+       "T h" "toggle highlighting"
+       "T L" "toggle log io"
+       "T s" "toggle signature"
+       "T S" "toggle sideline"
+       "T d" "toggle documentation popup"
+       "T p" "toggle signature help"
+       "T f" "toggle on type formatting"
+       "T T" "toggle treemacs integration"
 
-     "g"   "goto"
-     "g g" "find definitions"
-     "g r" "find references"
-     "g i" "find implementations"
-     "g d" "find declarations"
-     "g t" "find type definition"
-     "g h" "call hierarchy"
-     "g a" "find symbol in workspace"
-     "g A" "find symbol in all workspaces"
-     "g e" "show errors"
+       "g"   "goto"
+       "g g" "find definitions"
+       "g r" "find references"
+       "g i" "find implementations"
+       "g d" "find declarations"
+       "g t" "find type definition"
+       "g h" "call hierarchy"
+       "g a" "find symbol in workspace"
+       "g A" "find symbol in all workspaces"
+       "g e" "show errors"
 
-     "h"   "help"
-     "h h" "describe symbol at point"
-     "h s" "signature help"
+       "h"   "help"
+       "h h" "describe symbol at point"
+       "h s" "signature help"
 
-     "r"   "refactor"
-     "r r" "rename"
-     "r o" "organize imports"
+       "r"   "refactor"
+       "r r" "rename"
+       "r o" "organize imports"
 
-     "a"   "code actions"
-     "a a" "code actions"
-     "a l" "lens"
-     "a h" "highlight symbol"
+       "a"   "code actions"
+       "a a" "code actions"
+       "a l" "lens"
+       "a h" "highlight symbol"
 
-     "G"   "peek"
-     "G g" "peek definitions"
-     "G r" "peek references"
-     "G i" "peek implementations"
-     "G s" "peek workspace symbol"))))
+       "G"   "peek"
+       "G g" "peek definitions"
+       "G r" "peek references"
+       "G i" "peek implementations"
+       "G s" "peek workspace symbol")))))
 
 
 
@@ -2572,7 +2577,7 @@ BINDINGS is a list of (key def cond)."
 
   ;; ‘diagnostics’ a hashmap with workspace diagnostics.
   (diagnostics (make-hash-table :test 'equal))
- 
+
   ;; contains all the workDone progress tokens that have been created
   ;; for the current workspace.
   (work-done-tokens (make-hash-table :test 'equal)))
@@ -2795,7 +2800,7 @@ If NO-WAIT is non-nil send the request as notification."
     (let* ((send-time (time-to-seconds (current-time)))
            ;; max time by which we must get a response
            (expected-time (+ send-time lsp-response-timeout))
-           resp-result resp-error)
+           resp-result resp-error done?)
       (unwind-protect
           (progn
             (lsp-request-async method params (lambda (res) (setf resp-result (or res :finished)))
@@ -2807,17 +2812,18 @@ If NO-WAIT is non-nil send the request as notification."
               (accept-process-output nil 0.001)
               (when (< expected-time (time-to-seconds (current-time)))
                 (error "Timeout while waiting for response. Method: %s." method)))
-
+            (setq done? t)
             (cond
              ((eq resp-result :finished) nil)
              (resp-result resp-result)
              ((ht? resp-error) (error (gethash "message" resp-error)))
              (t (error (gethash "message" (cl-first resp-error))))))
-        (lsp-cancel-request-by-token :sync-request)))))
+        (unless done?
+          (lsp-cancel-request-by-token :sync-request))))))
 
 (cl-defun lsp-request-while-no-input (method params)
   "Send request METHOD with PARAMS and waits until there is no input."
-  (let* (resp-result resp-error)
+  (let* (resp-result resp-error done?)
     (unwind-protect
         (progn
           (lsp-request-async
@@ -2831,13 +2837,15 @@ If NO-WAIT is non-nil send the request as notification."
           (while (and (not (or resp-error resp-result))
                       (not (input-pending-p)))
             (accept-process-output nil 0.001))
+          (setq done? t)
           (cond
            ((eq resp-result :finished) nil)
            (resp-result resp-result)
            ((ht? resp-error) (error (gethash "message" resp-error)))
            ((input-pending-p) nil)
            (t (error (gethash "message" (cl-first resp-error))))))
-      (lsp-cancel-request-by-token :sync-request))))
+      (unless done?
+        (lsp-cancel-request-by-token :sync-request)))))
 
 (defvar lsp--cancelable-requests (ht))
 
@@ -2906,7 +2914,7 @@ executed is still alive. `current' the callback will be executed
 only if the original buffer is still selected. `tick' - the
 callback will be executed only if the buffer was not modified.
 `unchanged' - the callback will be executed only if the buffer
-hasnt changed and if the buffer is not modified.
+hasn't changed and if the buffer is not modified.
 
 ERROR-CALLBACK will be called in case the request has failed.
 If NO-MERGE is non-nil, don't merge the results but return alist workspace->result.
@@ -3923,7 +3931,7 @@ Added to `after-change-functions'."
   :type 'hook
   :group 'lsp-mode)
 
-(defcustom lsp-idle-delay 0.200
+(defcustom lsp-idle-delay 0.500
   "Debounce interval for `after-change-functions'. "
   :type 'number
   :group 'lsp-mode)
@@ -4096,10 +4104,10 @@ if it's closing the last buffer in the workspace."
       (when (lsp--send-will-save-p)
         (lsp-notify "textDocument/willSave" params))
       (when (and (lsp--send-will-save-wait-until-p) lsp-before-save-edits)
-        (lsp-request-async "textDocument/willSaveWaitUntil"
-                           params
-                           #'lsp--apply-text-edits
-                           :mode 'tick)))))
+        (let ((lsp-response-timeout 0.1))
+          (lsp--apply-text-edits
+           (lsp-request "textDocument/willSaveWaitUntil"
+                        params)))))))
 
 (defun lsp--on-auto-save ()
   "Handler for auto-save."
@@ -4607,6 +4615,7 @@ MODE is the mode used in the parent frame."
   (push '("&lt;" . ?<) prettify-symbols-alist)
   (push '("&gt;" . ?>) prettify-symbols-alist)
   (push '("&amp;" . ?&) prettify-symbols-alist)
+  (push '("&nbsp;" . ? ) prettify-symbols-alist)
   (setq prettify-symbols-compose-predicate
         (lambda (_start _end _match) t))
   (prettify-symbols-mode 1))
@@ -4641,7 +4650,7 @@ Stolen from `org-copy-visible'."
 
     (goto-char (point-min))
     (while (re-search-forward
-            (rx (and "\\" (group (or "\\" "`" "*" "_"
+            (rx (and "\\" (group (or "\\" "`" "*" "_" ":" "/"
                                      "{" "}" "[" "]" "(" ")"
                                      "#" "+" "-" "." "!" "|"))))
             nil t)
@@ -4654,6 +4663,64 @@ Stolen from `org-copy-visible'."
 
     (lsp--setup-markdown major-mode)))
 
+(defvar lsp--display-inline-image-alist
+  '((lsp--render-markdown
+     (:regexp
+      "!\\[.*?\\](data:image/[a-zA-Z]+;base64,\\([A-Za-z0-9+/\n]+?=*?\\)\\(|[^)]+\\)?)"
+      :sexp
+      (create-image
+       (base64-decode-string
+        (buffer-substring-no-properties (match-beginning 1) (match-end 1)))
+       nil t))))
+  "Replaced string regexp and function returning image.
+Each element should be:
+(MODE . (PROPERTY-LIST...))
+MODE (car) is function which is defined in `lsp-language-id-configuration'.
+Cdr should be list of PROPERTY-LIST.
+
+Each PROPERTY-LIST should have properties:
+:regexp  Regexp which determines what string is relpaced to image.
+         You should also get infomation of image, by parenthesis constructs.
+         By deafult, all matched string is replaced to image, but you can change
+         index of replaced string by keyword :replaced-index.
+
+:sexp    Return image when evaluated. You can use infomation of regexp
+         by using (match-beggining N), (match-end N) or (match-substring N).
+
+In addition, each can have property:
+:replaced-index  Determine index which is used to replace regexp to image.
+                 The value means first argument of `match-beggining' and `match-end'.
+                 If omitted, interpreted as index 0.
+")
+
+(defcustom lsp-display-inline-image t
+  "Showing inline image or not."
+  :group 'lsp-mode
+  :type 'boolean)
+
+(defun lsp--display-inline-image (mode)
+  "Add image property if available."
+  (let ((plist-list (cdr (assq mode lsp--display-inline-image-alist))))
+    (when (and (display-images-p) lsp-display-inline-image)
+      (cl-loop
+       for plist in plist-list
+       with regexp with replaced-index
+       do
+       (setq regexp (plist-get plist :regexp))
+       (setq replaced-index (or (plist-get plist :replaced-index) 0))
+
+       (font-lock-remove-keywords nil (list regexp replaced-index))
+       (let ((inhibit-read-only t))
+         (save-excursion
+           (goto-char (point-min))
+           (while (re-search-forward regexp nil t)
+             (set-text-properties
+              (match-beginning replaced-index) (match-end replaced-index)
+              nil)
+             (add-text-properties
+              (match-beginning replaced-index) (match-end replaced-index)
+              `(display ,(eval (plist-get plist :sexp)))))))))))
+
 (defun lsp--fontlock-with-mode (str mode)
   "Fontlock STR with MODE."
   (condition-case nil
@@ -4661,7 +4728,8 @@ Stolen from `org-copy-visible'."
         (insert str)
         (delay-mode-hooks (funcall mode))
         (cl-flet ((window-body-width () lsp-window-body-width))
-          (font-lock-ensure))
+          (font-lock-ensure)
+          (lsp--display-inline-image mode))
         (lsp--buffer-string-visible))
     (error str)))
 
@@ -4715,9 +4783,11 @@ CONTENTS  - MarkedString | MarkedString[] | MarkupContent
 RENDER-ALL - nil if only the signature should be rendered."
   (cond
    ((and (hash-table-p contents) (gethash "kind" contents))
-    ;; MarkupContent, deprecated by LSP but actually very flexible.
-    ;; It tends to be long and is not suitable in echo area.
-    (if render-all (lsp--render-element contents) ""))
+    ;; MarkupContent.
+    ;; It tends to be long and is not suitable to display fully in the echo area.
+    ;; Just display the first line which is typically the signature.
+    (let ((rendered (lsp--render-element contents)))
+      (if render-all rendered (car (s-lines rendered)))))
    ((and (stringp contents) (not (string-match-p "\n" contents)))
     ;; If the contents is a single string containing a single line,
     ;; render it always.
@@ -5126,6 +5196,8 @@ interface DocumentRangeFormattingParams {
   "Create a callback to process the reply of a
 'textDocument/documentHighlight' message for the buffer BUF.
 A reference is highlighted only if it is visible in a window."
+  (lsp--remove-overlays 'lsp-highlight)
+
   (let* ((wins-visible-pos (-map (lambda (win)
                                    (cons (1- (line-number-at-pos (window-start win)))
                                          (1+ (line-number-at-pos (window-end win)))))
@@ -6885,7 +6957,7 @@ nil."
 
    ;; activation function or major-mode match.
    (if-let (activation-fn (lsp--client-activation-fn client))
-       (funcall activation-fn buffer-file-name major-mode)
+       (funcall activation-fn (buffer-file-name) major-mode)
      (-contains? (lsp--client-major-modes client) major-mode))
 
    ;; check whether it is enabled if `lsp-enabled-clients' is not null
@@ -7650,7 +7722,7 @@ reporting or we are in save-mode and the buffer is not modified."
 (declare-function lsp-cpp-flycheck-clang-tidy-error-explainer "lsp-cpp")
 
 (defvar lsp-diagnostics-attributes
-  `((unnecessary :background "dim gray")
+  `((unnecessary :foreground "dim gray")
     (deprecated  :strike-through t) )
   "List containing (tag attributes) where tag is the LSP
   diagnostic tag and attributes is a `plist' containing face
@@ -7676,12 +7748,14 @@ g. `error', `warning') and list of LSP TAGS."
                (category (--doto (intern (format "lsp-%s-category" name))
                            (setf (get it 'face) face
                                  (get it 'priority) 100)))
-               (new-level (intern name)))
+               (new-level (intern name))
+	       (bitmap (or (get flycheck-level 'flycheck-fringe-bitmaps)
+			   (get flycheck-level 'flycheck-fringe-bitmap-double-arrow))))
           (flycheck-define-error-level new-level
             :severity (get flycheck-level 'flycheck-error-severity)
             :compilation-level (get flycheck-level 'flycheck-compilation-level)
             :overlay-category category
-            :fringe-bitmap (get flycheck-level 'flycheck-fringe-bitmap-double-arrow)
+            :fringe-bitmap bitmap
             :fringe-face (get flycheck-level 'flycheck-fringe-face)
             :error-list-face face)
           new-level))))
