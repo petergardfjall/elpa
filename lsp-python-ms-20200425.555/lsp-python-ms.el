@@ -3,7 +3,7 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.6.0
-;; Package-Version: 20200223.2136
+;; Package-Version: 20200425.555
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.6.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/andrew-christianson/lsp-python-ms
 ;; Keywords: languages tools
@@ -213,7 +213,7 @@ here."
                                 (format "powershell -noprofile -noninteractive \
 -nologo -ex bypass Expand-Archive -path '%s' -dest '%s'" temp-file install-dir))
                                (t (user-error "Unable to extract '%s' to '%s'! \
-Please extact manually." temp-file install-dir)))))
+Please extract manually." temp-file install-dir)))))
 
       (lsp--info "Downloading Microsoft Python Language Server...")
 
