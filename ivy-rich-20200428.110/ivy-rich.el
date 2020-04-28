@@ -4,7 +4,7 @@
 
 ;; Author: Yevgnen Koh <wherejoystarts@gmail.com>
 ;; Package-Requires: ((emacs "24.5") (ivy "0.8.0"))
-;; Package-Version: 20200322.1326
+;; Package-Version: 20200428.110
 ;; Version: 0.1.6
 ;; Keywords: ivy
 
@@ -47,7 +47,7 @@
 (defcustom ivy-rich-display-transformers-list
   '(ivy-switch-buffer
     (:columns
-     ((ivy-rich-candidate (:width 30))
+     ((ivy-switch-buffer-transformer (:width 30))
       (ivy-rich-switch-buffer-size (:width 7))
       (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right))
       (ivy-rich-switch-buffer-major-mode (:width 12 :face warning))
