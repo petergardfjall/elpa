@@ -46,27 +46,29 @@
 ;; Since it is a marker in the treemacs buffer it is important for it to be reset whenever it might
 ;; become invalid.
 
-(defvar treemacs--not-selected-icon-background
-  (pcase (face-attribute 'default :background nil t)
-    ('unspecified
-     (prog1 "#2d2d31"
-       (unless (boundp 'treemacs-no-load-time-warnings)
-         (message "[Treemacs] Warning: coudn't find default background color for icons, falling back on #2d2d31."))))
-    ('unspecified-bg
-     (prog1 "#2d2d31"
-       (unless (boundp 'treemacs-no-load-time-warnings)
-         (message "[Treemacs] Warning: background color is unspecified, icons will likely look wrong. Falling back on #2d2d31."))))
-    (other other))
+(eval-and-compile
+  (defvar treemacs--not-selected-icon-background
+    (pcase (face-attribute 'default :background nil t)
+      ('unspecified
+       (prog1 "#2d2d31"
+         (unless (boundp 'treemacs-no-load-time-warnings)
+           (message "[Treemacs] Warning: coudn't find default background color for icons, falling back on #2d2d31."))))
+      ('unspecified-bg
+       (prog1 "#2d2d31"
+         (unless (boundp 'treemacs-no-load-time-warnings)
+           (message "[Treemacs] Warning: background color is unspecified, icons will likely look wrong. Falling back on #2d2d31."))))
+      (other other)))
   "Background for non-selected icons.")
 
-(defvar treemacs--selected-icon-background
-  (-let [bg (face-attribute 'hl-line :background nil t)]
-    (if (memq bg '(unspecified unspecified-b))
-        (prog1 treemacs--not-selected-icon-background
-          (unless (boundp 'treemacs-no-load-time-warnings)
-            (message "[Treemacs] Warning: couldn't find hl-line-mode's background color for icons, falling back on %s."
-                     treemacs--not-selected-icon-background)))
-      bg))
+(eval-and-compile
+  (defvar treemacs--selected-icon-background
+    (-let [bg (face-attribute 'hl-line :background nil t)]
+      (if (memq bg '(unspecified unspecified-b))
+          (prog1 treemacs--not-selected-icon-background
+            (unless (boundp 'treemacs-no-load-time-warnings)
+              (message "[Treemacs] Warning: couldn't find hl-line-mode's background color for icons, falling back on %s."
+                       treemacs--not-selected-icon-background)))
+        bg)))
   "Background for selected icons.")
 
 (define-inline treemacs--set-img-property (image property value)
@@ -302,7 +304,7 @@ Necessary since root icons are not rectangular."
     (treemacs-create-icon :file "json.png"          :extensions ("json"))
     (treemacs-create-icon :file "julia.png"         :extensions ("jl"))
     (treemacs-create-icon :file "elx.png"           :extensions ("ex"))
-    (treemacs-create-icon :file "elx-light.png"     :extensions ("exs" "eex"))
+    (treemacs-create-icon :file "elx-light.png"     :extensions ("exs" "eex" "leex"))
     (treemacs-create-icon :file "ocaml.png"         :extensions ("ml" "mli" "merlin" "ocaml"))
     (treemacs-create-icon :file "direnv.png"        :extensions ("envrc"))
     (treemacs-create-icon :file "puppet.png"        :extensions ("pp"))
