@@ -549,7 +549,7 @@ are determined by the index of the element."
 (defconst lsp--imenu-compare-function-alist
   (list (cons 'name #'lsp--imenu-compare-name)
         (cons 'kind #'lsp--imenu-compare-kind)
-        (cons 'position #'lsp--imenu-compare-position))
+        (cons 'position #'lsp--imenu-compare-line-col))
   "An alist of (METHOD . FUNCTION).
 METHOD is one of the symbols accepted by
 `lsp-imenu-sort-methods'.
@@ -4062,7 +4062,8 @@ Applies on type formatting."
     (->> (lsp-session)
          (lsp-session-folders)
          (--first (and (lsp--files-same-host it file-name)
-                       (f-ancestor-of? it file-name))))))
+                       (or (f-ancestor-of? it file-name)
+                           (string= it file-name)))))))
 
 (defun lsp-on-revert ()
   "Executed when a file is reverted.
@@ -4175,12 +4176,13 @@ and the position respectively."
 
 (defun lsp--looking-back-trigger-characters-p (trigger-characters)
   "Return trigger character if text before point matches any of the TRIGGER-CHARACTERS."
-  (seq-some
-   (lambda (trigger-char)
-     (and (equal (buffer-substring-no-properties (- (point) (length trigger-char)) (point))
-                 trigger-char)
-          trigger-char))
-   trigger-characters))
+  (unless (= (point) (point-at-bol))
+    (seq-some
+     (lambda (trigger-char)
+       (and (equal (buffer-substring-no-properties (- (point) (length trigger-char)) (point))
+                   trigger-char)
+            trigger-char))
+     trigger-characters)))
 
 (defvar lsp--capf-cache nil
   "Cached candidates for completion at point function.
@@ -4808,7 +4810,9 @@ RENDER-ALL - nil if only the signature should be rendered."
          (-andfn 'hash-table-p
                  (-compose #'lsp-get-renderer (-partial 'gethash "language")))
          contents)))
-     "\n"))))
+     (if (bound-and-true-p page-break-lines-mode)
+         "\n\n"
+       "\n")))))
 
 
 
@@ -6144,13 +6148,17 @@ WORKSPACE is the active workspace."
                             err)))
                workspace))))))))
 
+(defvar-local lsp--line-col-to-point-hash-table nil
+  "Hash table with keys (line . col) and values that are either point positions or markers.")
+
 (defun lsp--symbol-to-imenu-elem (sym)
   "Convert SYM to imenu element.
 
 SYM is a SymbolInformation message.
 
 Return a cons cell (full-name . start-point)."
-  (let* ((start-point (lsp--symbol-get-start-point sym))
+  (let* ((start-point (ht-get lsp--line-col-to-point-hash-table
+                              (lsp--get-line-and-col sym)))
          (name (gethash "name" sym))
          (container (gethash "containerName" sym)))
     (cons (if (and lsp-imenu-show-container-name container)
@@ -6169,25 +6177,13 @@ an alist
 
   (\"symbol-name\" . ((\"(symbol-kind)\" . start-point)
                     cons-cells-from-children))"
-  (let* ((start-point (lsp--symbol-get-start-point sym))
+  (let* ((start-point (ht-get lsp--line-col-to-point-hash-table
+                              (lsp--get-line-and-col sym)))
          (name (gethash "name" sym)))
     (if (seq-empty-p (gethash "children" sym))
         (cons name start-point)
       (cons name
             (lsp--imenu-create-hierarchical-index (gethash "children" sym))))))
-
-(defun lsp--symbol-get-start-point (sym)
-  "Get the start point of the name of SYM.
-
-SYM can be either DocumentSymbol or SymbolInformation."
-  (let* ((location (gethash "location" sym))
-         (name-range (or (and location (gethash "range" location))
-                         (gethash "selectionRange" sym)))
-         (start-point (lsp--position-to-point
-                       (gethash "start" name-range))))
-    (if imenu-use-markers
-        (save-excursion (goto-char start-point) (point-marker))
-      start-point)))
 
 (defun lsp--symbol-filter (sym)
   "Determine if SYM is for the current document."
@@ -6207,15 +6203,60 @@ SYM can be either DocumentSymbol or SymbolInformation."
       (cdr)
       (or "Other")))
 
+(defun lsp--get-line-and-col (sym)
+  "Obtain the line and column corresponding to SYM."
+  (-let* ((location (gethash "location" sym))
+          (name-range (or (and location (gethash "range" location))
+                          (gethash "selectionRange" sym)))
+          (start (gethash "start" name-range))
+          ((&hash "line" "character") start))
+    (cons line character)))
+
+(defun lsp--collect-lines-and-cols (symbols)
+  "Return a sorted list ((line . col) ...) of the locations of SYMBOLS."
+  (let ((stack (lsp--imenu-filter-symbols symbols))
+        line-col-list)
+    (while stack
+      (let ((sym (pop stack)))
+        (push (lsp--get-line-and-col sym) line-col-list)
+        (unless (seq-empty-p (gethash "children" sym))
+          (setf stack (append (lsp--imenu-filter-symbols (gethash "children" sym)) stack)))))
+    (-sort #'lsp--line-col-comparator line-col-list)))
+
+(defun lsp--convert-line-col-to-points-batch (line-col-list)
+  "Convert a sorted list of positions from line-column
+representation to point representation."
+  (let* ((line-col-to-point-map (ht-create))
+         (inhibit-field-text-motion t)
+         (curr-line 0))
+    (save-excursion
+      (save-restriction
+        (widen)
+        (goto-char (point-min))
+        (cl-loop for (line . col) in line-col-list do
+                 (forward-line (- line curr-line))
+                 (setq curr-line line)
+                 (let ((line-end (line-end-position)))
+                   (if (or (not col) (> col (- line-end (point))))
+                       (goto-char line-end)
+                     (forward-char col)))
+                 (ht-set! line-col-to-point-map (cons line col) (if imenu-use-markers
+                                                                    (point-marker)
+                                                                  (point))))))
+    line-col-to-point-map))
+
+(cl-defun lsp--line-col-comparator ((l1 . c1) (l2 . c2))
+  (or (< l1 l2)
+      (and (= l1 l2) (< c1 c2))))
+
 (defun lsp--imenu-create-index ()
   "Create imenu index from document symbols."
-  (let ((symbols (lsp--get-document-symbols)))
-    (if (lsp--imenu-hierarchical-p symbols)
-        (lsp--imenu-create-hierarchical-index symbols)
-      (seq-map (lambda (nested-alist)
-                 (cons (car nested-alist)
-                       (seq-map #'lsp--symbol-to-imenu-elem (cdr nested-alist))))
-               (seq-group-by #'lsp--get-symbol-type (lsp--imenu-filter-symbols symbols))))))
+  (let* ((symbols (lsp--get-document-symbols))
+         (filtered-symbols (lsp--imenu-filter-symbols symbols))
+         (lsp--line-col-to-point-hash-table (lsp--convert-line-col-to-points-batch (lsp--collect-lines-and-cols filtered-symbols))))
+    (if (lsp--imenu-hierarchical-p filtered-symbols)
+        (lsp--imenu-create-hierarchical-index filtered-symbols)
+      (lsp--imenu-create-non-hierarchical-index filtered-symbols))))
 
 (defun lsp--imenu-filter-symbols (symbols)
   "Filter out unsupported symbols from SYMBOLS."
@@ -6224,6 +6265,24 @@ SYM can be either DocumentSymbol or SymbolInformation."
 (defun lsp--imenu-hierarchical-p (symbols)
   "Determine whether any element in SYMBOLS has children."
   (seq-some (-partial #'gethash "children") symbols))
+
+(defun lsp--imenu-create-non-hierarchical-index (symbols)
+  "Create imenu index for non-hierarchical SYMBOLS.
+
+SYMBOLS are a list of DocumentSymbol messages.
+
+Return a nested alist keyed by symbol names. e.g.
+
+   ((\"SomeClass\" (\"(Class)\" . 10)
+                 (\"someField (Field)\" . 20)
+                 (\"someFunction (Function)\" . 25)
+                 (\"SomeSubClass\" (\"(Class)\" . 30)
+                                  (\"someSubField (Field)\" . 35))
+    (\"someFunction (Function)\" . 40))"
+  (seq-map (lambda (nested-alist)
+             (cons (car nested-alist)
+                   (seq-map #'lsp--symbol-to-imenu-elem (cdr nested-alist))))
+           (seq-group-by #'lsp--get-symbol-type symbols)))
 
 (defun lsp--imenu-create-hierarchical-index (symbols)
   "Create imenu index for hierarchical SYMBOLS.
@@ -6260,11 +6319,12 @@ Return a nested alist keyed by symbol names. e.g.
         (kind2 (gethash "kind" sym2)))
     (- kind1 kind2)))
 
-(defun lsp--imenu-compare-position (sym1 sym2)
-  "Compare SYM1 and SYM2 by position."
-  (let ((position1 (lsp--symbol-get-start-point sym1))
-        (position2 (lsp--symbol-get-start-point sym2)))
-    (- position1 position2)))
+(defun lsp--imenu-compare-line-col (sym1 sym2)
+  (if (lsp--line-col-comparator
+       (lsp--get-line-and-col sym1)
+       (lsp--get-line-and-col sym2))
+      -1
+    1))
 
 (defun lsp--imenu-compare-name (sym1 sym2)
   "Compare SYM1 and SYM2 by name."
