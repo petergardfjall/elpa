@@ -3,7 +3,7 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.6.0
-;; Package-Version: 20200425.555
+;; Package-Version: 20200501.1408
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.6.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/andrew-christianson/lsp-python-ms
 ;; Keywords: languages tools
@@ -37,8 +37,7 @@
 (require 'find-file-in-project nil 'noerror)
 
 ;; Forward declare functions
-(declare-function ffip-get-project-root-directory 'ffip)
-(declare-function lsp-client-on-notification 'lsp-mode)
+(declare-function ffip-get-project-root-directory "ext:find-file-in-project")
 
 ;; Forward declare variable
 (defvar lsp-render-markdown-markup-content)
@@ -369,15 +368,6 @@ directory"
 
 WORKSPACE is just used for logging and _PARAMS is unused."
    (lsp--info "Microsoft Python language server started"))
-
-(defun lsp-python-ms--client-initialized (client)
-   "Callback to register and configure client after it's initialized.
-
-After CLIENT is initialized, this function is called to configure
-other handlers. "
-   (lsp-client-on-notification client "python/languageServerStarted"
-                               #'lsp-python-ms--language-server-started-callback)
-  (lsp-client-on-notification client "telemetry/event" #'ignore))
 
 ;; this gets called when we do lsp-describe-thing-at-point
 ;; see lsp-methods.el. As always, remove Microsoft's unwanted entities :(
