@@ -50,6 +50,13 @@ Show the changelog of treemacs." t nil)
 (autoload 'treemacs-edit-workspaces "treemacs" "\
 Edit your treemacs workspaces and projects as an `org-mode' file." t nil)
 
+(autoload 'treemacs-display-current-project-exclusively "treemacs" "\
+Display the current project, and *only* the current project.
+Like `treemacs-add-and-display-current-project' this will add the current
+project to treemacs based on either projectile or the built projectl.el.
+However the 'exclusive' part means that it will make the current project the
+only project, all other projects *will be removed* from the current workspace." t nil)
+
 (autoload 'treemacs-add-and-display-current-project "treemacs" "\
 Open treemacs and add the current project root to the workspace.
 The project is determined first by projectile (if treemacs-projectile is

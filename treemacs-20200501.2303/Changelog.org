@@ -3,7 +3,10 @@
 
 * Changelog
 ** current master
- - New icons
+- Added ~treemacs-display-current-project-exclusively~
+- Added ~treemacs-icon-catalogue~
+- New icons
+- Bug Fixes
 ** v2.8
  - Made workspaces lazy-loaded as needed
  - Published ~treemacs-persp~
