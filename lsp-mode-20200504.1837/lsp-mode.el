@@ -67,6 +67,7 @@
 
 (defvar company-backends)
 (defvar c-basic-offset)
+(defvar yas-inhibit-overlay-modification-protection)
 
 (defconst lsp--message-type-face
   `((1 . ,compilation-error-face)
@@ -584,11 +585,25 @@ than the second parameter.")
   "Whether or not to apply additional text edit when performing completion.
 
 If set to non-nil, `lsp-mode' will apply additional text edits
-from the server. Otherwise, the additional text edits are
+from the server.  Otherwise, the additional text edits are
 ignored."
   :type 'boolean
   :group 'lsp-mode
   :package-version '(lsp-mode . "6.3.2"))
+
+(defcustom lsp-completion-styles (if (version<= "27.0" emacs-version)
+                                     `(flex)
+                                   `(substring))
+  "List of completion styles to use for filtering completion items."
+  :type completion--styles-type
+  :group 'lsp-mode
+  :package-version '(lsp-mode . "6.3.2"))
+
+(defcustom lsp-completion-show-detail t
+  "Whether or not to show detail of completion candidates."
+  :type 'boolean
+  :group 'lsp-mode)
+
 
 (defcustom lsp-server-trace nil
   "Request tracing on the server side.
@@ -778,13 +793,6 @@ Set to nil to disable the warning."
   :type 'number
   :group 'lsp-mode)
 ;;;###autoload(put 'lsp-file-watch-threshold 'safe-local-variable (lambda (i) (or (numberp i) (not i))))
-
-(defcustom lsp-completion-styles (if (version<= "27.0" emacs-version)
-                                     `(flex)
-                                   `(substring))
-  "List of completion styles to use for filtering completion items."
-  :group 'lsp-mode
-  :type completion--styles-type)
 
 (defvar lsp-custom-markup-modes
   '((rust-mode "no_run" "rust,no_run" "rust,ignore" "rust,should_panic"))
@@ -1864,7 +1872,7 @@ WORKSPACE is the workspace that contains the diagnostics."
           (cons (lsp--folding-range-beg range)
                 (lsp--folding-range-end range)))
     nil))
-(put 'lsp-folding-range 'bounds-of-thing-at-point
+(put 'lsp--folding-range 'bounds-of-thing-at-point
      #'lsp--folding-range-at-point-bounds)
 
 (defun lsp--get-nearest-folding-range (&optional backward)
@@ -4180,7 +4188,7 @@ and the position respectively."
 (defun lsp--annotate (item)
   "Annotate ITEM detail."
   (-let (((&hash "detail" "kind") (plist-get (text-properties-at 0 item) 'lsp-completion-item)))
-    (concat (when detail (concat " " detail))
+    (concat (when (and lsp-completion-show-detail detail) (concat " " detail))
             (when-let (kind-name (and kind (aref lsp--completion-item-kind kind)))
               (format " (%s)" kind-name)))))
 
@@ -4235,10 +4243,12 @@ When the heuristic fails to find the prefix start point, return DEFAULT value."
        (-map (-lambda ((item &as &hash
                              "label"
                              "filterText" filter-text
-                             "_emacsStartPoint" start-point))
+                             "_emacsStartPoint" start-point
+                             "score"))
                (propertize (or filter-text label)
                            'lsp-completion-item item
-                           'lsp-completion-start-point start-point))
+                           'lsp-completion-start-point start-point
+                           'lsp-completion-score score))
              it)
        (seq-into it 'list)
        (-group-by (-partial #'get-text-property 0 'lsp-completion-start-point) it)
@@ -4269,8 +4279,13 @@ Also, additional data to attached to each candidate can be passed via PLIST."
                                  it))))
                   (-flatten-n 1)
                   (-sort (-on #'> (lambda (o)
-                                    (or (get-text-property 0 'completion-score o)
-                                        0))))
+                                    (or (get-text-property 0 'sort-score o)
+                                        (let* ((score (* (or (get-text-property 0 'completion-score o)
+                                                             0.001)
+                                                         (or (get-text-property 0 'lsp-completion-score o)
+                                                             0.001))))
+                                          (put-text-property 0 1 'sort-score score o)
+                                          score)))))
                   ;; TODO: pass additional function to sort the candidates
                   (-map (-partial #'get-text-property 0 'lsp-completion-item)))
            lsp-items)))
@@ -6669,7 +6684,10 @@ returns the command to execute."
 
    ((and (fboundp 'company-mode))
     (company-mode 1)
-    (add-to-list 'company-backends 'company-capf))))
+    (add-to-list 'company-backends 'company-capf)))
+
+  ;; yas-snippet config
+  (setq-local yas-inhibit-overlay-modification-protection t))
 
 (defvar-local lsp--buffer-deferred nil
   "Whether buffer was loaded via `lsp-deferred'.")
