@@ -176,6 +176,14 @@ treemacs node is pointing to a valid buffer position." t nil)
 
 ;;;***
 
+;;;### (autoloads nil "treemacs-header-line" "treemacs-header-line.el"
+;;;;;;  (0 0 0 0))
+;;; Generated autoloads from treemacs-header-line.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "treemacs-header-line" '("treemacs-header-buttons-format")))
+
+;;;***
+
 ;;;### (autoloads nil "treemacs-icons" "treemacs-icons.el" (0 0 0
 ;;;;;;  0))
 ;;; Generated autoloads from treemacs-icons.el
