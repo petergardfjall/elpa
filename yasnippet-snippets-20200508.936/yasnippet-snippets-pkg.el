@@ -1,4 +1,4 @@
-(define-package "yasnippet-snippets" "20200425.1210" "Collection of yasnippet snippets"
+(define-package "yasnippet-snippets" "20200508.936" "Collection of yasnippet snippets"
   '((yasnippet "0.8.0"))
   :keywords
   '("snippets")
