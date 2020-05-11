@@ -215,7 +215,7 @@ the buffer when it becomes large."
   '(ccls cquery lsp-clients lsp-clojure lsp-csharp lsp-css lsp-dart lsp-elm
     lsp-erlang lsp-eslint lsp-fsharp lsp-gdscript lsp-go lsp-haskell lsp-haxe
     lsp-intelephense lsp-java lsp-json lsp-metals lsp-perl lsp-pwsh lsp-pyls
-    lsp-python-ms lsp-rust lsp-solargraph lsp-terraform lsp-verilog lsp-vetur
+    lsp-python-ms lsp-rust lsp-serenata lsp-solargraph lsp-terraform lsp-verilog lsp-vetur
     lsp-vhdl lsp-xml lsp-yaml)
   "List of the clients to be automatically required."
   :group 'lsp-mode
@@ -765,11 +765,6 @@ must be used for handling a particular message.")
   '((t :inherit highlight :weight bold))
   "Face used for highlighting symbols being written to."
   :group 'lsp-faces)
-
-(defcustom lsp-lens-check-interval 0.1
-  "The interval for checking for changes in the buffer state."
-  :group 'lsp-mode
-  :type 'number)
 
 (defcustom lsp-lens-auto-enable nil
   "Auto lenses if server there is server support."
@@ -4178,12 +4173,12 @@ and the position respectively."
                  "sortText" sort-text
                  "_emacsStartPoint" start-point)
           item)
-         ((&plist :prefix-line) plist))
+         ((&plist :markers) plist))
     (propertize (or label insert-text)
                 'lsp-completion-item item
                 'lsp-sort-text sort-text
                 'lsp-completion-start-point start-point
-                'lsp-completion-prefix-line prefix-line)))
+                'lsp-completion-markers markers)))
 
 (defun lsp--annotate (item)
   "Annotate ITEM detail."
@@ -4192,7 +4187,7 @@ and the position respectively."
             (when-let (kind-name (and kind (aref lsp--completion-item-kind kind)))
               (format " (%s)" kind-name)))))
 
-(defun lsp--looking-back-trigger-characters-p (trigger-characters)
+(defun lsp--looking-back-trigger-characterp (trigger-characters)
   "Return trigger character if text before point matches any of the TRIGGER-CHARACTERS."
   (unless (= (point) (point-at-bol))
     (seq-some
@@ -4209,6 +4204,11 @@ When the completion is incomplete, cache contains value of `incomplete'.")
 
 (defun lsp--capf-clear-cache (&rest _)
   "Clear completion caches."
+  (-some-> (and (listp lsp--capf-cache) lsp--capf-cache)
+    (cddr)
+    (plist-get :markers)
+    (cadr)
+    (set-marker nil))
   (setq lsp--capf-cache nil))
 
 (defun lsp--capf-guess-prefix (item &optional default)
@@ -4344,7 +4344,7 @@ Also, additional data to attached to each candidate can be passed via PLIST."
   "Get completion context with provided TRIGGER-CHARACTERS."
   (let* (trigger-char
          (trigger-kind (cond
-                        ((setq trigger-char (lsp--looking-back-trigger-characters-p
+                        ((setq trigger-char (lsp--looking-back-trigger-characterp
                                              trigger-characters))
                          'character)
                         ((equal lsp--capf-cache 'incomplete) 'incomplete)
@@ -4359,10 +4359,16 @@ Also, additional data to attached to each candidate can be passed via PLIST."
   (when (or (--some (lsp--client-completion-in-comments? (lsp--workspace-client it))
                     (lsp-workspaces))
             (not (nth 4 (syntax-ppss))))
-    (let* ((bounds-start (or (car (bounds-of-thing-at-point 'symbol)) (point)))
-           (trigger-chars (->> (lsp--server-capabilities)
+    (let* ((trigger-chars (->> (lsp--server-capabilities)
                                (gethash "completionProvider")
                                (gethash "triggerCharacters")))
+           (bounds-start (or (-some--> (car (bounds-of-thing-at-point 'symbol))
+                               (save-excursion
+                                 (goto-char (+ it 1))
+                                 (if (lsp--looking-back-trigger-characterp trigger-chars)
+                                     (+ it 1)
+                                   it)))
+                             (point)))
            result done?)
       (list
        bounds-start
@@ -4386,75 +4392,87 @@ Also, additional data to attached to each candidate can be passed via PLIST."
                           "textDocument/completion"
                           (plist-put (lsp--text-document-position-params)
                                      :context (lsp--capf-get-context trigger-chars))))
-                   (items (->> (lsp--sort-completions (cond
-                                                       ((seqp resp) resp)
-                                                       ((hash-table-p resp) (gethash "items" resp))))
+                   (completed (or (seqp resp)
+                                  (not (gethash "isIncomplete" resp))))
+                   (items (--> (cond
+                                ((seqp resp) resp)
+                                ((hash-table-p resp) (gethash "items" resp)))
+                               (if (or completed
+                                       (seq-some (-rpartial #'lsp--ht-get "sortText") it))
+                                   (lsp--sort-completions it)
+                                 it)
                                (-map (lambda (item)
                                        (puthash "_emacsStartPoint"
                                                 (lsp--capf-guess-prefix item bounds-start)
                                                 item)
-                                       item))))
-                   (prefix-line (buffer-substring-no-properties (point-at-bol) (point))))
-             (setf done? (or (seqp resp)
-                             (not (gethash "isIncomplete" resp)))
+                                       item)
+                                     it)))
+                   (markers (list (point) (copy-marker (point) t))))
+             (setf done? completed
                    lsp--capf-cache (cond
                                     ((and done? (not (seq-empty-p items)))
                                      (list (buffer-substring-no-properties bounds-start (point))
                                            (lsp--capf-cached-items items)
                                            :lsp-items nil
-                                           :prefix-line prefix-line))
+                                           :markers markers))
                                     ((not done?) 'incomplete))
                    result (lsp--capf-filter-candidates (if done? (cadr lsp--capf-cache))
                                                        :lsp-items items
-                                                       :prefix-line prefix-line))))))
+                                                       :markers markers))))))
        :annotation-function #'lsp--annotate
        :company-require-match 'never
        :company-prefix-length
-       (save-excursion
-         (goto-char bounds-start)
-         (and (lsp--looking-back-trigger-characters-p trigger-chars) t))
+       (when (or lsp--capf-cache
+                 (lsp--looking-back-trigger-characterp trigger-chars))
+         t)
        :company-match #'lsp--capf-company-match
        :company-doc-buffer (-compose #'company-doc-buffer
                                      #'lsp--capf-get-documentation)
        :exit-function
-       (lambda (candidate _status)
-         (-let* (((&plist 'lsp-completion-item item
-                          'lsp-completion-start-point start-point
-                          'lsp-completion-prefix-line prefix-line)
-                  (text-properties-at 0 candidate))
-                 ((&hash "label"
-                         "insertText" insert-text
-                         "textEdit" text-edit
-                         "insertTextFormat" insert-text-format
-                         "additionalTextEdits" additional-text-edits)
-                  item))
-           (cond
-            (text-edit
-             (delete-region (point-at-bol) (point))
-             (insert prefix-line)
-             (lsp--apply-text-edit text-edit))
-            ((or insert-text label)
-             (delete-region (point-at-bol) (point))
-             (insert prefix-line)
-             (delete-region start-point (point))
-             (insert (or insert-text label))))
+       (-rpartial #'lsp--capf-exit-fn trigger-chars)))))
 
-           (when (eq insert-text-format 2)
-             (yas-expand-snippet
-              (lsp--to-yasnippet-snippet (buffer-substring start-point (point)))
-              start-point
-              (point)))
-           (when (and lsp-completion-enable-additional-text-edit additional-text-edits)
-             (lsp--apply-text-edits additional-text-edits)))
-         (lsp--capf-clear-cache)
-         (when (and lsp-signature-auto-activate
-                    (lsp-feature? "textDocument/signatureHelp"))
-           (lsp-signature-activate))
+(defun lsp--capf-exit-fn (candidate _status &optional trigger-chars)
+  "Exit function of `completion-at-point'.
+CANDIDATE is the selected completion item.
+Others: TRIGGER-CHARS"
+  (-let* (((&plist 'lsp-completion-item item
+                   'lsp-completion-start-point start-point
+                   'lsp-completion-markers markers)
+           (text-properties-at 0 candidate))
+          ((&hash "label"
+                  "insertText" insert-text
+                  "textEdit" text-edit
+                  "insertTextFormat" insert-text-format
+                  "additionalTextEdits" additional-text-edits)
+           item))
+    (cond
+     (text-edit
+      (apply #'delete-region markers)
+      (lsp--apply-text-edit text-edit))
+     ((or insert-text label)
+      (apply #'delete-region markers)
+      (delete-region start-point (point))
+      (insert (or insert-text label))))
 
-         (setq-local lsp-inhibit-lsp-hooks nil)
+    (when (eq insert-text-format 2)
+      (yas-expand-snippet
+       (lsp--to-yasnippet-snippet (buffer-substring start-point (point)))
+       start-point
+       (point)))
 
-         (when (lsp--looking-back-trigger-characters-p trigger-chars)
-           (setq this-command 'self-insert-command)))))))
+    (when (and lsp-completion-enable-additional-text-edit additional-text-edits)
+      (lsp--apply-text-edits additional-text-edits)))
+
+  (lsp--capf-clear-cache)
+
+  (when (and lsp-signature-auto-activate
+             (lsp-feature? "textDocument/signatureHelp"))
+    (lsp-signature-activate))
+
+  (setq-local lsp-inhibit-lsp-hooks nil)
+
+  (when (lsp--looking-back-trigger-characterp trigger-chars)
+    (setq this-command 'self-insert-command)))
 
 (advice-add #'completion-at-point :before #'lsp--capf-clear-cache)
 
@@ -4798,11 +4816,12 @@ When language is nil render as markup if `markdown-mode' is loaded."
    ((seq-empty-p actions) (signal 'lsp-no-code-actions nil))
    ((and (eq (seq-length actions) 1) lsp-auto-execute-action)
     (lsp-seq-first actions))
-   (t (lsp--completing-read "Select code action: "
-                            (seq-into actions 'list)
-                            (-lambda ((&hash "title" "command"))
-                              (or title command))
-                            nil t))))
+   (t (let ((completion-ignore-case t))
+        (lsp--completing-read "Select code action: "
+                              (seq-into actions 'list)
+                              (-lambda ((&hash "title" "command"))
+                                (or title command))
+                              nil t)))))
 
 (defun lsp-join-region (beg end)
   "Apply join-line from BEG to END.
@@ -6635,13 +6654,7 @@ returns the command to execute."
               (setq-local lsp-inhibit-lsp-hooks t))
             nil
             t)
-  (add-hook 'company-completion-finished-hook
-            (lambda (&rest _)
-              (lsp--capf-clear-cache)
-              (setq-local lsp-inhibit-lsp-hooks nil))
-            nil
-            t)
-  (add-hook 'company-completion-cancelled-hook
+  (add-hook 'company-after-completion-hook
             (lambda (&rest _)
               (lsp--capf-clear-cache)
               (setq-local lsp-inhibit-lsp-hooks nil))
