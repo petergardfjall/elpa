@@ -6,7 +6,7 @@
 ;;         Marshall T. Vandegrift <llasram@gmail.com>
 ;; Maintainer: Vasilij Schneidermann <mail@vasilij.de>
 ;; Package-Requires: ((emacs "24.1"))
-;; Package-Version: 20200510.1921
+;; Package-Version: 20200512.2141
 ;; Keywords: data yaml
 ;; Version: 0.0.14
 
@@ -274,7 +274,11 @@ that key is pressed to begin a block literal."
            ((and (char-equal ?' (char-before (1- pt)))
                  (char-equal ?' (char-before pt)))
             (put-text-property (- pt 2) pt
-                               'syntax-table (string-to-syntax "w")))
+                               'syntax-table (string-to-syntax "w"))
+            ;; Workaround for https://debbugs.gnu.org/41195.
+            (let ((syntax-propertize--done syntax-propertize--done))
+              ;; Carefully invalidate the last cached ppss.
+              (syntax-ppss-flush-cache (- pt 2))))
            ;; If quote is detected as a syntactic string start but appeared
            ;; after a non-whitespace character, then mark it as syntactic word.
            ((and (char-before (1- pt))
@@ -285,7 +289,10 @@ that key is pressed to begin a block literal."
             ;; We're right after a quote that opens a string literal.
             ;; Skip over it (big speedup for long JSON strings).
             (goto-char (1- pt))
-            (ignore-errors (forward-sexp)))))))))
+            (condition-case nil
+                (forward-sexp)
+              (scan-error
+               (goto-char end))))))))))
 
 (defun yaml-font-lock-block-literals (bound)
   "Find lines within block literals.
