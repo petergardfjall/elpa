@@ -2251,7 +2251,8 @@ BINDINGS is a list of (key def cond)."
                     ,(format "maybe-%s" def)
                     ,def
                     :filter (lambda (item)
-                              (when (with-current-buffer (or lsp--describe-buffer
+                              (when (with-current-buffer (or (when (buffer-live-p lsp--describe-buffer)
+                                                               lsp--describe-buffer)
                                                              (current-buffer))
                                       ,cond)
                                 item))))))
@@ -4726,18 +4727,17 @@ Cdr should be list of PROPERTY-LIST.
 
 Each PROPERTY-LIST should have properties:
 :regexp  Regexp which determines what string is relpaced to image.
-         You should also get infomation of image, by parenthesis constructs.
-         By deafult, all matched string is replaced to image, but you can change
-         index of replaced string by keyword :replaced-index.
+         You should also get information of image, by parenthesis constructs.
+         By default, all matched string is replaced to image, but you can
+         change index of replaced string by keyword :replaced-index.
 
-:sexp    Return image when evaluated. You can use infomation of regexp
+:sexp    Return image when evaluated. You can use information of regexp
          by using (match-beggining N), (match-end N) or (match-substring N).
 
 In addition, each can have property:
 :replaced-index  Determine index which is used to replace regexp to image.
-                 The value means first argument of `match-beggining' and `match-end'.
-                 If omitted, interpreted as index 0.
-")
+                 The value means first argument of `match-beginning' and
+                 `match-end'. If omitted, interpreted as index 0.")
 
 (defcustom lsp-display-inline-image t
   "Showing inline image or not."
@@ -5018,7 +5018,9 @@ It will show up only if current point has signature help."
                             (length signatures)
                             (propertize "│ " 'face 'shadow)))
             (prefix-length (- (length prefix) 2))
-            (method-docs (when lsp-signature-render-documentation
+            (method-docs (when
+                             (and lsp-signature-render-documentation
+                                  (or (not (numberp lsp-signature-doc-lines)) (< 0 lsp-signature-doc-lines)))
                            (let ((docs (lsp--render-element
                                         (gethash "documentation" signature))))
                              (when (s-present? docs)
