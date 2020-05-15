@@ -1931,7 +1931,7 @@ are mandatory.
      syntax check in the buffer.
 
      This property is optional.  If omitted, Flycheck won't
-     attempt to interrupt syntax checks wit this syntax checker,
+     attempt to interrupt syntax checks with this syntax checker,
      and simply ignore their results.
 
 `:print-doc FUNCTION'
@@ -9545,17 +9545,17 @@ See URL `https://github.com/ndmitchell/hlint'."
             source-inplace)
   :error-patterns
   ((info line-start
-         (file-name) ":" line ":" column
+         (file-name) ":" line ":" column (optional "-" end-column)
          ": Suggestion: "
          (message (one-or-more (and (one-or-more (not (any ?\n))) ?\n)))
          line-end)
    (warning line-start
-            (file-name) ":" line ":" column
+            (file-name) ":" line ":" column (optional "-" end-column)
             ": Warning: "
             (message (one-or-more (and (one-or-more (not (any ?\n))) ?\n)))
             line-end)
    (error line-start
-          (file-name) ":" line ":" column
+          (file-name) ":" line ":" column (optional "-" end-column)
           ": Error: "
           (message (one-or-more (and (one-or-more (not (any ?\n))) ?\n)))
           line-end))
