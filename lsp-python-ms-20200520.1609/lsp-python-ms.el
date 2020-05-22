@@ -2,8 +2,8 @@
 
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
-;; Version: 0.6.0
-;; Package-Version: 20200501.1408
+;; Version: 0.7.0
+;; Package-Version: 20200520.1609
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.6.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/andrew-christianson/lsp-python-ms
 ;; Keywords: languages tools
@@ -90,6 +90,11 @@ set as `python3' to let ms-pyls use python 3 environments."
                                             (if (eq system-type 'windows-nt) ".exe" ""))
   "Path to the Microsoft Python LanguageServer binary."
   :type '(file :must-match t)
+  :group 'lsp-python-ms)
+
+(defcustom lsp-python-ms-auto-install-server t
+  "Install Microsoft Python Language Server automatically."
+  :type 'boolean
   :group 'lsp-python-ms)
 
 (defcustom lsp-python-ms-nupkg-channel "stable"
@@ -306,7 +311,7 @@ or projectile, or just return `default-directory'."
    (t default-directory)))
 
 ;; I based most of this on the vs.code implementation:
-;; https://github.com/Microsoft/vscode-python/blob/master/src/client/activation/languageServer/languageServer.ts#L219
+;; https://github.com/microsoft/vscode-python/blob/master/src/client/activation/languageServer/analysisOptions.ts
 ;; (it still took quite a while to get right, but here we are!)
 (defun lsp-python-ms--extra-init-params (&optional workspace)
   "Return form describing parameters for language server.
@@ -332,9 +337,7 @@ directory"
                          :maxDocumentationLineLength 0
                          :trimDocumentationText :json-false
                          :maxDocumentationTextLength 0)
-        :searchPaths ,(if lsp-python-ms-extra-paths
-                          (vconcat lsp-python-ms-extra-paths nil)
-                        pysyspath)
+        :searchPaths ,(vconcat lsp-python-ms-extra-paths pysyspath)
         :analysisUpdates t
         :asyncStartup t
         :logLevel ,lsp-python-ms-log-level
@@ -421,7 +424,7 @@ WORKSPACE is just used for logging and _PARAMS is unused."
                                         (lambda () (f-exists? lsp-python-ms-executable)))
   :major-modes (append '(python-mode) lsp-python-ms-extra-major-modes)
   :server-id 'mspyls
-  :priority -2
+  :priority 1
   :initialization-options 'lsp-python-ms--extra-init-params
   :notification-handlers (lsp-ht ("python/languageServerStarted" 'lsp-python-ms--language-server-started-callback)
                                  ("telemetry/event" 'ignore)
@@ -431,7 +434,9 @@ WORKSPACE is just used for logging and _PARAMS is unused."
   :initialized-fn (lambda (workspace)
                     (with-lsp-workspace workspace
                       (lsp--set-configuration (lsp-configuration-section "python"))))
-  :download-server-fn #'lsp-python-ms--install-server))
+  :download-server-fn (lambda (client callback error-callback update?)
+                        (when lsp-python-ms-auto-install-server
+                          (lsp-python-ms--install-server client callback error-callback update?)))))
 
 (provide 'lsp-python-ms)
 
