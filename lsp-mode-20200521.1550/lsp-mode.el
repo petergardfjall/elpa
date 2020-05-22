@@ -1056,11 +1056,11 @@ TRANSFORM-FN will be used to transform each of the items before displaying.
 
 PROMPT COLLECTION PREDICATE REQUIRE-MATCH INITIAL-INPUT HIST DEF
 INHERIT-INPUT-METHOD will be proxied to `completing-read' without changes."
-  (let* ((result (--map (cons (funcall transform-fn it) it) collection))
-         (completion (completing-read prompt (-map 'cl-first result)
+  (let* ((col (--map (cons (funcall transform-fn it) it) collection))
+         (completion (completing-read prompt col
                                       predicate require-match initial-input hist
                                       def inherit-input-method)))
-    (cdr (assoc completion result))))
+    (cdr (assoc completion col))))
 
 ;; A ‘lsp--client’ object describes the client-side behavior of a language
 ;; server.  It is used to start individual server processes, each of which is
@@ -2904,10 +2904,12 @@ MODE determines when the callback will be called depending on the
 condition of the original buffer. METHOD is the invoked method.
 If NO-MERGE is non-nil, don't merge the results but return alist workspace->result.
 ID is the request id. "
-  (let (results)
+  (let (results errors)
     (lambda (result)
-      (push (cons lsp--cur-workspace result) results)
-      (when (eq (length results) (length workspaces))
+      (push (cons lsp--cur-workspace result)
+            (if (eq result :error) errors results))
+      (when (and (not (eq (length errors) (length workspaces)))
+                 (eq (+ (length errors) (length results)) (length workspaces)))
         (funcall callback
                  (if no-merge
                      results
@@ -3001,6 +3003,7 @@ If NO-MERGE is non-nil, don't merge the results but return alist workspace->resu
                               nil
                               target-workspaces))
              (error-callback (lambda (error)
+                               (funcall callback :error)
                                (lsp--request-cleanup-hooks id)
                                (funcall error-callback error)))
              (body (plist-put body :id id)))
@@ -4191,12 +4194,13 @@ and the position respectively."
                  "sortText" sort-text
                  "_emacsStartPoint" start-point)
           item)
-         ((&plist :markers) plist))
+         ((&plist :markers :prefix) plist))
     (propertize (or label insert-text)
                 'lsp-completion-item item
                 'lsp-sort-text sort-text
                 'lsp-completion-start-point start-point
-                'lsp-completion-markers markers)))
+                'lsp-completion-markers markers
+                'lsp-completion-prefix prefix)))
 
 (defun lsp--annotate (item)
   "Annotate ITEM detail."
@@ -4383,9 +4387,11 @@ Also, additional data to attached to each candidate can be passed via PLIST."
                                (gethash "triggerCharacters")))
            (bounds-start (or (-some--> (car (bounds-of-thing-at-point 'symbol))
                                (save-excursion
-                                 (goto-char (+ it 1))
-                                 (if (lsp--looking-back-trigger-characterp trigger-chars)
-                                     (+ it 1)
+                                 (ignore-errors
+                                   (goto-char (+ it 1))
+                                   (while (lsp--looking-back-trigger-characterp trigger-chars)
+                                     (cl-incf it)
+                                     (forward-char))
                                    it)))
                              (point)))
            result done?
@@ -4419,18 +4425,21 @@ Also, additional data to attached to each candidate can be passed via PLIST."
                                                       item)
                                              item)
                                            it)))
-                         (markers (list (point) (copy-marker (point) t))))
+                         (markers (list bounds-start (copy-marker (point) t)))
+                         (prefix (buffer-substring-no-properties bounds-start (point))))
                    (setf done? completed
                          lsp--capf-cache (cond
                                            ((and done? (not (seq-empty-p items)))
                                             (list (buffer-substring-no-properties bounds-start (point))
                                                   (lsp--capf-cached-items items)
                                                   :lsp-items nil
-                                                  :markers markers))
+                                                  :markers markers
+                                                  :prefix prefix))
                                            ((not done?) 'incomplete))
                          result (lsp--capf-filter-candidates (if done? (cadr lsp--capf-cache))
                                                              :lsp-items items
-                                                             :markers markers))))))))
+                                                             :markers markers
+                                                             :prefix prefix))))))))
       (list
        bounds-start
        (point)
@@ -4451,9 +4460,9 @@ Also, additional data to attached to each candidate can be passed via PLIST."
        :annotation-function #'lsp--annotate
        :company-require-match 'never
        :company-prefix-length
-       (when (or lsp--capf-cache
-                 (lsp--looking-back-trigger-characterp trigger-chars))
-         t)
+       (save-excursion
+         (goto-char bounds-start)
+         (and (lsp--looking-back-trigger-characterp trigger-chars) t))
        :company-match #'lsp--capf-company-match
        :company-doc-buffer (-compose #'company-doc-buffer
                                      #'lsp--capf-get-documentation)
@@ -4466,7 +4475,8 @@ CANDIDATE is the selected completion item.
 Others: TRIGGER-CHARS"
   (-let* (((&plist 'lsp-completion-item item
                    'lsp-completion-start-point start-point
-                   'lsp-completion-markers markers)
+                   'lsp-completion-markers markers
+                   'lsp-completion-prefix prefix)
            (text-properties-at 0 candidate))
           ((&hash "label"
                   "insertText" insert-text
@@ -4477,9 +4487,11 @@ Others: TRIGGER-CHARS"
     (cond
       (text-edit
        (apply #'delete-region markers)
+       (insert prefix)
        (lsp--apply-text-edit text-edit))
       ((or insert-text label)
        (apply #'delete-region markers)
+       (insert prefix)
        (delete-region start-point (point))
        (insert (or insert-text label))))
 
