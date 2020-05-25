@@ -221,6 +221,11 @@ the buffer when it becomes large."
   :group 'lsp-mode
   :type '(repeat symbol))
 
+(defcustom lsp-progress-via-spinner t
+  "If non-nil, display LSP $/progress reports via a spinner in the modeline."
+  :group 'lsp
+  :type 'boolean)
+
 (defvar-local lsp--cur-workspace nil)
 
 (defvar-local lsp--cur-version 0)
@@ -1554,19 +1559,40 @@ WORKSPACE is the workspace that contains the progress token."
         (let* ((message (gethash "title" value))
                (cur (gethash "percentage" value nil))
                (reporter
-                (if cur
-                    (make-progress-reporter message 0 100 cur)
-                  ;; Spinner only
-                  (make-progress-reporter message nil nil))))
+                (if lsp-progress-via-spinner
+                    (let* ((spinner-strings (alist-get 'progress-bar spinner-types))
+                           ;; Set message as a tooltip for the spinner strings
+                           (propertized-strings
+                            (seq-map (lambda (string) (propertize string 'help-echo message))
+                                     spinner-strings))
+                           (spinner-type (vconcat propertized-strings)))
+                      ;; The progress relates to the server as a whole,
+                      ;; display it on all buffers.
+                      (mapcar (lambda (buffer)
+                                (with-current-buffer buffer
+                                  (spinner-start spinner-type))
+                                buffer)
+                              (lsp--workspace-buffers workspace)))
+                  (if cur
+                      (make-progress-reporter message 0 100 cur)
+                    ;; No percentage, just progress
+                    (make-progress-reporter message nil nil)))))
           (lsp-workspace-set-work-done-token token reporter workspace)))
 
        ("report"
         (when-let ((reporter (lsp-workspace-get-work-done-token token workspace)))
-            (progress-reporter-update reporter (gethash "percentage" value nil))))
+          (when (not lsp-progress-via-spinner)
+            (progress-reporter-update reporter (gethash "percentage" value nil)))))
 
        ("end"
         (when-let ((reporter (lsp-workspace-get-work-done-token token workspace)))
-            (progress-reporter-done reporter)
+          (if lsp-progress-via-spinner
+              (mapc (lambda (buffer)
+                      (when (buffer-live-p buffer)
+                        (with-current-buffer buffer
+                          (spinner-stop))))
+                    reporter)
+            (progress-reporter-done reporter))
             (lsp-workspace-rem-work-done-token token workspace))))))
 
 (defun lsp-diagnostics (&optional current-workspace?)
@@ -1781,31 +1807,50 @@ WORKSPACE is the workspace that contains the diagnostics."
 
 (defun lsp--get-folding-ranges ()
   "Get the folding ranges for the current buffer."
-  (-let [(tick . ranges) lsp--cached-folding-ranges]
-    (if (eq tick (buffer-chars-modified-tick))
-        ranges
-      (setq ranges (lsp-request "textDocument/foldingRange"
+  (unless (eq (buffer-chars-modified-tick) (car lsp--cached-folding-ranges))
+    (let* ((ranges (lsp-request "textDocument/foldingRange"
                                 `(:textDocument ,(lsp--text-document-identifier))))
+           (sorted-line-col-pairs (-sort
+                                   #'lsp--line-col-comparator
+                                   (apply
+                                    #'nconc
+                                    (seq-map
+                                     (lambda (range)
+                                       (-let [(&hash "startLine" start-line
+                                                     "startCharacter" start-character
+                                                     "endLine" end-line
+                                                     "endCharacter" end-character)
+                                              range]
+                                         (list (cons start-line start-character)
+                                               (cons end-line end-character))))
+                                     ranges))))
+           (line-col-to-point-map (lsp--convert-line-col-to-points-batch
+                                   sorted-line-col-pairs)))
       (setq lsp--cached-folding-ranges
             (cons (buffer-chars-modified-tick)
-                  (-> (lambda (range)
-                        (-let [(&hash "startLine" start-line
-                                      "startCharacter" start-character
-                                      "endLine" end-line
-                                      "endCharacter" end-character
-                                      "kind" kind)
-                               range]
-                          (make-lsp--folding-range
-                           :beg (lsp--line-character-to-point
-                                 start-line start-character)
-                           :end (lsp--line-character-to-point
-                                 end-line end-character)
-                           :kind kind
-                           :orig-folding-range range)))
-                      (seq-map ranges)
-                      (seq-into 'list)
-                      (delete-dups))))
-      (cdr lsp--cached-folding-ranges))))
+                  (seq-filter (lambda (folding-range)
+                                (< (lsp--folding-range-beg folding-range)
+                                   (lsp--folding-range-end folding-range)))
+                              (delete-dups
+                               (seq-into
+                                (seq-map
+                                 (lambda (range)
+                                   (-let [(&hash "startLine" start-line
+                                                 "startCharacter" start-character
+                                                 "endLine" end-line
+                                                 "endCharacter" end-character
+                                                 "kind" kind)
+                                          range]
+                                     (make-lsp--folding-range
+                                      :beg (ht-get line-col-to-point-map
+                                                   (cons start-line start-character))
+                                      :end (ht-get line-col-to-point-map
+                                                   (cons end-line end-character))
+                                      :kind kind
+                                      :orig-folding-range range)))
+                                 ranges)
+                                'list)))))))
+  (cdr lsp--cached-folding-ranges))
 
 (defun lsp--get-nested-folding-ranges ()
   "Get a list of nested folding ranges for the current buffer."
@@ -6336,15 +6381,15 @@ an alist
       (let ((sym (pop stack)))
         (push (lsp--get-line-and-col sym) line-col-list)
         (unless (seq-empty-p (gethash "children" sym))
-          (setf stack (append (lsp--imenu-filter-symbols (gethash "children" sym)) stack)))))
+          (setf stack (nconc (lsp--imenu-filter-symbols (gethash "children" sym)) stack)))))
     (-sort #'lsp--line-col-comparator line-col-list)))
 
 (defun lsp--convert-line-col-to-points-batch (line-col-list)
   "Convert a sorted list of positions from line-column
 representation to point representation."
-  (let* ((line-col-to-point-map (ht-create))
-         (inhibit-field-text-motion t)
-         (curr-line 0))
+  (let ((line-col-to-point-map (ht-create))
+        (inhibit-field-text-motion t)
+        (curr-line 0))
     (save-excursion
       (save-restriction
         (widen)
@@ -6363,7 +6408,11 @@ representation to point representation."
 
 (cl-defun lsp--line-col-comparator ((l1 . c1) (l2 . c2))
   (or (< l1 l2)
-      (and (= l1 l2) (< c1 c2))))
+      (and (= l1 l2)
+           (cond ((and c1 c2)
+                  (< c1 c2))
+                 (c1 t)
+                 (c2 nil)))))
 
 (defun lsp--imenu-create-index ()
   "Create imenu index from document symbols."
