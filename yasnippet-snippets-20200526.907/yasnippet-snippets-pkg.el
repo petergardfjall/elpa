@@ -1,6 +1,6 @@
-(define-package "yasnippet-snippets" "20200523.1033" "Collection of yasnippet snippets"
+(define-package "yasnippet-snippets" "20200526.907" "Collection of yasnippet snippets"
   '((yasnippet "0.8.0"))
-  :keywords
+  :commit "b0161d9fc0bb70bf5710394dfab302b66e0325e3" :keywords
   '("snippets")
   :authors
   '(("Andrea Crotti" . "andrea.crotti.0@gmail.com"))
