@@ -4,7 +4,8 @@
 
 ;; Author: Yevgnen Koh <wherejoystarts@gmail.com>
 ;; Package-Requires: ((emacs "24.5") (ivy "0.8.0"))
-;; Package-Version: 20200428.110
+;; Package-Version: 0.1.6
+;; Package-Commit: 840e13314774a40b69f10f0a15ce1d6af4187b12
 ;; Version: 0.1.6
 ;; Keywords: ivy
 
@@ -47,7 +48,7 @@
 (defcustom ivy-rich-display-transformers-list
   '(ivy-switch-buffer
     (:columns
-     ((ivy-switch-buffer-transformer (:width 30))
+     ((ivy-rich-candidate (:width 30))
       (ivy-rich-switch-buffer-size (:width 7))
       (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right))
       (ivy-rich-switch-buffer-major-mode (:width 12 :face warning))
@@ -147,6 +148,11 @@ without duplicating definitions.
 
 Note that you may need to disable and enable the `ivy-rich-mode'
 again to make this variable take effect.")
+(define-obsolete-variable-alias
+  'ivy-rich--display-transformers-list
+  'ivy-rich-display-transformers-list
+  "0.1.2"
+  "Used `ivy-rich-display-transformers-list' instead.")
 
 ;; Common Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defalias 'ivy-rich-candidate 'identity)
