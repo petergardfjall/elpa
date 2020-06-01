@@ -4,7 +4,8 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "25.2") (projectile "0.14.0") (treemacs "0.0"))
-;; Package-Version: 20200114.1715
+;; Package-Version: 20200530.2129
+;; Package-Commit: b86028ec4da603e7687489ce3e0529d0630dc6c6
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -28,6 +29,9 @@
 
 (require 'treemacs)
 (require 'projectile)
+
+(eval-when-compile
+  (require 'treemacs-macros))
 
 ;;;###autoload
 (defun treemacs-projectile (&optional arg)
