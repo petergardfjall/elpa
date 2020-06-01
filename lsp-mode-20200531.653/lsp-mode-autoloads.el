@@ -160,6 +160,13 @@ This avoids overloading the server with many files when starting Emacs." nil nil
 
 ;;;***
 
+;;;### (autoloads nil "lsp-protocol" "lsp-protocol.el" (0 0 0 0))
+;;; Generated autoloads from lsp-protocol.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-protocol" '("lsp")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-pwsh" "lsp-pwsh.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-pwsh.el
 
