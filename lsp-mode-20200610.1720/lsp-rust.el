@@ -490,32 +490,7 @@ The command should include `--message=format=json` or similar option."
   '(("rust-analyzer/publishDecorations" . (lambda (_w _p)))))
 
 (defconst lsp-rust-action-handlers
-  '(("rust-analyzer.applySourceChange" .
-     (lambda (p) (lsp-rust-apply-source-change-command p)))
-    ("rust-analyzer.selectAndApplySourceChange" .
-     (lambda (p) (lsp-rust-select-and-apply-source-change-command p)))))
-
-(defun lsp-rust-apply-source-change-command (p)
-  (let ((data (-> p (ht-get "arguments") (lsp-seq-first))))
-    (lsp-rust-apply-source-change data)))
-
-(defun lsp-rust-uri-filename (text-document)
-  (lsp--uri-to-path (gethash "uri" text-document)))
-
-(defun lsp-rust-apply-source-change (data)
-  (seq-doseq (it (-> data (ht-get "workspaceEdit") (ht-get "documentChanges")))
-    (lsp--apply-text-document-edit it))
-  (-when-let (cursor-position (ht-get data "cursorPosition"))
-    (let ((filename (lsp-rust-uri-filename (ht-get cursor-position "textDocument")))
-          (position (ht-get cursor-position "position")))
-      (find-file filename)
-      (goto-char (lsp--position-to-point position)))))
-
-(defun lsp-rust-select-and-apply-source-change-command (p)
-  (let* ((options (-> p (ht-get "arguments") (lsp-seq-first)))
-         (chosen-option (lsp--completing-read "Select option:" options
-                                              (-lambda ((&hash "label")) label))))
-    (lsp-rust-apply-source-change chosen-option)))
+  '())
 
 (define-derived-mode lsp-rust-analyzer-syntax-tree-mode special-mode "Rust-Analyzer-Syntax-Tree"
   "Mode for the rust-analyzer syntax tree buffer.")
@@ -567,11 +542,11 @@ The command should include `--message=format=json` or similar option."
   "Join selected lines into one, smartly fixing up whitespace and trailing commas."
   (interactive)
   (let* ((params (list :textDocument (lsp--text-document-identifier)
-                       :range (if (use-region-p)
-                                  (lsp--region-to-range (region-beginning) (region-end))
-                                (lsp--region-to-range (point) (point)))))
-         (result (lsp-send-request (lsp-make-request "rust-analyzer/joinLines" params))))
-    (lsp-rust-apply-source-change result)))
+                       :ranges (vector (if (use-region-p)
+                                           (lsp--region-to-range (region-beginning) (region-end))
+                                         (lsp--region-to-range (point) (point))))))
+         (result (lsp-send-request (lsp-make-request "experimental/joinLines" params))))
+    (lsp--apply-text-edits result)))
 
 (lsp-register-client
  (make-lsp-client
@@ -716,6 +691,12 @@ The command should include `--message=format=json` or similar option."
   (interactive (list (or lsp-rust-analyzer--last-runnable
                          (lsp-rust-analyzer--select-runnable))))
   (lsp-rust-analyzer-run (or runnable lsp-rust-analyzer--last-runnable)))
+
+;; goto parent module
+(cl-defun lsp-rust-find-parent-module (&key display-action)
+  "Find parent module of current module."
+  (interactive)
+  (lsp-find-locations "experimental/parentModule" nil :display-action display-action))
 
 (provide 'lsp-rust)
 ;;; lsp-rust.el ends here
