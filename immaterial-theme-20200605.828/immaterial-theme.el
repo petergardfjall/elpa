@@ -4,7 +4,8 @@
 
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
-;; Package-Version: 20200308.1330
+;; Package-Version: 20200605.828
+;; Package-Commit: 506555eb438f9cdf4a8c9333189a235c9984c2a6
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
 ;; Version: 0.4.2
 ;; Package-Requires: ((emacs "25"))
@@ -301,7 +302,7 @@ over the default ones defined in immaterial-color-alist."
    `(treemacs-directory-face ((,class (:foreground ,sec-dark))))
    `(treemacs-file-face ((,class (:inherit immaterial-small-face))))
    `(treemacs-term-node-face ((,class (:foreground ,sec-dark :weight bold))))
-   `(treemacs-git-modified-face ((,class (:foreground ,fg1 :weight bold))))
+   `(treemacs-git-modified-face ((,class (:foreground ,prim :weight bold))))
    `(treemacs-git-added-face ((,class (:foreground ,prim-dark :weight bold))))
    `(treemacs-git-renamed-face ((,class (:foreground ,prim-dark :italic t))))
    `(treemacs-git-ignored-face ((,class (:foreground ,discrete))))
