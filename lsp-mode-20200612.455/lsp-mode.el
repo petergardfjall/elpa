@@ -650,6 +650,21 @@ If this is set to nil, `eldoc' will show only the symbol information."
   :type 'boolean
   :group 'lsp-mode)
 
+(defcustom lsp-modeline-code-actions-enable t
+  "Wheter to show code actions on modeline."
+  :type 'boolean
+  :group 'lsp-mode)
+
+(defcustom lsp-modeline-code-actions-kind-regex "quickfix.*\\|refactor.*"
+  "Regex for the code actions kinds to show in the modeline."
+  :type 'string
+  :group 'lsp-mode)
+
+(defcustom lsp-modeline-code-actions-face 'homoglyph
+  "Face used to code action text on modeline."
+  :type 'face
+  :group 'lsp-faces)
+
 (defcustom lsp-after-diagnostics-hook nil
   "Hooks to run after diagnostics are received.
 Note: it runs only if the receiving buffer is open. Use
@@ -1878,6 +1893,84 @@ WORKSPACE is the workspace that contains the progress token."
                       (t (remove status global-mode-string))))))
 
 
+;; code actions modeline
+
+(defvar-local lsp--modeline-code-actions-string nil
+  "Holds the current code action string on modeline.")
+
+(declare-function all-the-icons-octicon "ext:all-the-icons" t t)
+
+(defun lsp--modeline-code-actions-icon ()
+  "Build the icon for modeline code actions."
+  (if (require 'all-the-icons nil t)
+      (all-the-icons-octicon "light-bulb"
+                             :face lsp-modeline-code-actions-face
+                             :v-adjust -0.0575)
+    (propertize "💡" 'face lsp-modeline-code-actions-face)))
+
+(defun lsp--modeline-build-code-actions-string (actions)
+  "Build the string to be presented on modeline for code ACTIONS."
+  (-let* ((icon (lsp--modeline-code-actions-icon))
+          (first-action-string (propertize (->> actions
+                                                lsp-seq-first
+                                                lsp:code-action-title
+                                                (replace-regexp-in-string "[\n\t ]+" " "))
+                                           'face lsp-modeline-code-actions-face))
+          (single-action? (= (length actions) 1))
+          (string (if single-action?
+                      (format " %s %s " icon first-action-string)
+                    (format " %s %s %s " icon first-action-string
+                            (propertize (format "(%d more)" (seq-length actions))
+                                        'display `((height 0.9))
+                                        'face lsp-modeline-code-actions-face)))))
+    (propertize string
+                'help-echo (concat "Apply code actions (s-l a a)\nmouse-1: "
+                                   (if single-action?
+                                       first-action-string
+                                     "select from multiple code actions"))
+                'mouse-face 'mode-line-highlight
+                'local-map (make-mode-line-mouse-map
+                            'mouse-1 (lambda ()
+                                       (interactive)
+                                       (if single-action?
+                                           (lsp-execute-code-action (lsp-seq-first actions))
+                                         (lsp-execute-code-action (lsp--select-action actions))))))))
+
+(defun lsp-modeline--update-code-actions (actions)
+  "Update modeline with new code ACTIONS."
+  (when lsp-modeline-code-actions-kind-regex
+    (setq actions (seq-filter (-lambda ((&CodeAction :kind?))
+                                (or (not kind?)
+                                    (s-match lsp-modeline-code-actions-kind-regex kind?)))
+                              actions)))
+  (if (seq-empty-p actions)
+      (setq-local global-mode-string (remove '(t (:eval lsp--modeline-code-actions-string)) global-mode-string))
+    (progn
+      (setq lsp--modeline-code-actions-string (lsp--modeline-build-code-actions-string actions))
+      (add-to-list 'global-mode-string '(t (:eval lsp--modeline-code-actions-string)))))
+  (force-mode-line-update))
+
+(defun lsp--modeline-check-code-actions (&rest _)
+  "Request code actions to update modeline for given BUFFER."
+  (lsp-request-async
+   "textDocument/codeAction"
+   (lsp--text-document-code-action-params)
+   #'lsp-modeline--update-code-actions
+   :mode 'tick
+   :cancel-token :lsp-modeline-code-actions))
+
+(define-minor-mode lsp-modeline-code-actions-mode
+  "Toggle code actions on modeline."
+  :group 'lsp-mode
+  :global nil
+  :lighter ""
+  (cond
+   (lsp-modeline-code-actions-mode
+    (add-hook 'lsp-on-idle-hook 'lsp--modeline-check-code-actions nil t))
+   (t
+    (remove-hook 'lsp-on-idle-hook 'lsp--modeline-check-code-actions t))))
+
+
 
 (defalias 'lsp--buffer-for-file (if (eq system-type 'windows-nt)
                                     #'find-buffer-visiting
@@ -2535,6 +2628,7 @@ BINDINGS is a list of (key def cond)."
       "Tl" lsp-lens-mode (lsp-feature? "textDocument/codeLens")
       "TL" lsp-toggle-trace-io t
       "Th" lsp-toggle-symbol-highlight (lsp-feature? "textDocument/documentHighlight")
+      "Ta" lsp-modeline-code-actions-mode (lsp-feature? "textDocument/codeAction")
       "TS" lsp-ui-sideline-mode (featurep 'lsp-ui-sideline)
       "Td" lsp-ui-doc-mode (featurep 'lsp-ui-doc)
       "Ts" lsp-toggle-signature-auto-activate (lsp-feature? "textDocument/signatureHelp")
@@ -2616,6 +2710,7 @@ active `major-mode', or for all major modes when ALL-MODES is t."
        "T h" "toggle highlighting"
        "T L" "toggle log io"
        "T s" "toggle signature"
+       "T a" "toggle modeline code actions"
        "T S" "toggle sideline"
        "T d" "toggle documentation popup"
        "T p" "toggle signature help"
@@ -2721,7 +2816,8 @@ active `major-mode', or for all major modes when ALL-MODES is t."
       ["Add" lsp-workspace-folders-add]
       ["Remove" lsp-workspace-folders-remove]
       ["Open" lsp-workspace-folders-open])
-     ["Toggle Lenses" lsp-lens-mode]))
+     ["Toggle Lenses" lsp-lens-mode]
+     ["Toggle modeline code actions" lsp-modeline-code-actions-mode]))
   "Menu for lsp-mode.")
 
 (defun lsp-mode-line ()
@@ -5560,7 +5656,7 @@ It will show up only if current point has signature help."
 
 (lsp-defun lsp-execute-code-action ((action &as &CodeAction :command? :edit?))
   "Execute code action ACTION.
-If ACTION is not set it will be selected from `lsp-code-actions'."
+If ACTION is not set it will be selected from `lsp-code-actions-at-point'."
   (interactive (list (lsp--select-action (lsp-code-actions-at-point))))
   (when edit?
     (lsp--apply-workspace-edit edit?))
@@ -6860,6 +6956,10 @@ returns the command to execute."
   (when (functionp 'lsp-ui-mode)
     (lsp-ui-mode))
 
+  (when (and lsp-modeline-code-actions-enable
+             (lsp--capability "codeActionProvider"))
+    (lsp-modeline-code-actions-mode 1))
+
   (cond
    ((or
      (and (eq lsp-diagnostic-package :auto)
@@ -6889,7 +6989,7 @@ returns the command to execute."
       (add-to-list 'company-backends 'company-lsp)
       (setq-local company-backends (remove 'company-capf company-backends))))
 
-   ((and (fboundp 'company-mode))
+   ((and (fboundp 'company-mode) lsp-enable-completion-at-point)
     (company-mode 1)
     (add-to-list 'company-backends 'company-capf)))
 
@@ -8213,12 +8313,12 @@ See https://github.com/emacs-lsp/lsp-mode."
   (lsp--validate
    "Checking for Native JSON support" (functionp 'json-serialize)
    "Checking emacs version has `read-process-output-max'" (boundp 'read-process-output-max)
-   "Using company-capf: " (-contains? company-backends 'company-capf)
+   "Using company-capf" (-contains? company-backends 'company-capf)
    "Check emacs supports `read-process-output-max'" (boundp 'read-process-output-max)
    "Check `read-process-output-max' default has been changed from 4k"
    (and (boundp 'read-process-output-max)
         (> read-process-output-max 4096))
-   "Byte compiled against native json (recompile emacs if failing.)"
+   "Byte compiled against Native JSON (recompile lsp-mode if failing when Native JSON available)"
    (condition-case _err
        (progn (lsp--make-message  (list "a" "b"))
               nil)
