@@ -214,7 +214,7 @@ unless overridden by a more specific face association."
   :group 'lsp-faces)
 
 (defun lsp--semhl-scope-matchp (matchspec scopes)
-  "Returns t iff there is an element M in MATCHSPEC s.t. every N in M
+  "Returns t if there is an element M in MATCHSPEC s.t. every N in M
  is a prefix of, or identical to, one of the scopes contained in SCOPES"
   (-any? (lambda (or-matchspec)
            (-all? (lambda (and-matchspec)
@@ -737,7 +737,8 @@ The value is a list of `kind' `name' or `position'.  Priorities
 are determined by the index of the element."
   :type '(repeat (choice (const name)
                          (const position)
-                         (const kind))))
+                         (const kind)))
+  :group 'lsp-imenu)
 
 ;; vibhavp: Should we use a lower value (5)?
 (defcustom lsp-response-timeout 10
@@ -1031,6 +1032,12 @@ called with nil the signature info must be cleared."
   :group 'lsp-mode
   :package-version '(lsp-mode . "6.3"))
 
+(defcustom lsp-keymap-prefix "s-l"
+  "lsp-mode keymap prefix."
+  :group 'lsp-mode
+  :type 'string
+  :package-version '(lsp-mode . "6.3"))
+
 (defvar-local lsp--lens-overlays nil
   "Current lenses.")
 
@@ -1222,7 +1229,7 @@ Symlinks are not followed."
   "Return t if PATH-A is ancestor of PATH-B.
 Symlinks are not followed."
   (unless (lsp-f-same? path-a path-b)
-    (s-prefix? (lsp-f-canonical path-a)
+    (s-prefix? (concat (lsp-f-canonical path-a) (f-path-separator))
                (lsp-f-canonical path-b))))
 
 (defun lsp--merge-results (results method)
@@ -1639,7 +1646,7 @@ This set of allowed chars is enough for hexifying local file paths.")
         (if (and (directory-name-p file)
                  (not (lsp--string-match-any (lsp-file-watch-ignored) (f-join dir (f-filename file)))))
             (let* ((leaf (substring file 0 (1- (length file))))
-                   (full-file (concat dir "/" leaf)))
+                   (full-file (f-join dir leaf)))
               ;; Don't follow symlinks to other directories.
               (unless (file-symlink-p full-file)
                 (setq result
@@ -1649,7 +1656,7 @@ This set of allowed chars is enough for hexifying local file paths.")
                          (string-match regexp leaf))
                 (setq result (nconc result (list full-file)))))
           (when (string-match regexp file)
-            (push (concat dir "/" file) files)))))
+            (push (f-join dir file) files)))))
     (nconc result (nreverse files))))
 
 (defun lsp--ask-about-watching-big-repo (number-of-files dir)
@@ -1905,23 +1912,37 @@ WORKSPACE is the workspace that contains the progress token."
                              :v-adjust -0.0575)
     (propertize "💡" 'face lsp-modeline-code-actions-face)))
 
+(defun lsp--modeline-code-action->string (action)
+  "Convert code ACTION to friendly string."
+  (->> action
+       lsp:code-action-title
+       (replace-regexp-in-string "[\n\t ]+" " ")))
+
 (defun lsp--modeline-build-code-actions-string (actions)
   "Build the string to be presented on modeline for code ACTIONS."
   (-let* ((icon (lsp--modeline-code-actions-icon))
-          (first-action-string (propertize (->> actions
-                                                lsp-seq-first
-                                                lsp:code-action-title
-                                                (replace-regexp-in-string "[\n\t ]+" " "))
+          (first-action-string (propertize (or (-some->> actions
+                                                 (-first #'lsp:code-action-is-preferred?)
+                                                 lsp--modeline-code-action->string)
+                                               (->> actions
+                                                    lsp-seq-first
+                                                    lsp--modeline-code-action->string))
                                            'face lsp-modeline-code-actions-face))
           (single-action? (= (length actions) 1))
+          (keybinding (-some->> #'lsp-execute-code-action
+                        where-is-internal
+                        (-find (lambda (o)
+                                 (not (member (aref o 0) '(menu-bar normal-state)))))
+                        key-description
+                        (format "(%s)")))
           (string (if single-action?
                       (format " %s %s " icon first-action-string)
                     (format " %s %s %s " icon first-action-string
-                            (propertize (format "(%d more)" (seq-length actions))
+                            (propertize (format "(%d more)" (1- (seq-length actions)))
                                         'display `((height 0.9))
                                         'face lsp-modeline-code-actions-face)))))
     (propertize string
-                'help-echo (concat "Apply code actions (s-l a a)\nmouse-1: "
+                'help-echo (concat (format "Apply code actions %s\nmouse-1: " keybinding)
                                    (if single-action?
                                        first-action-string
                                      "select from multiple code actions"))
@@ -1940,11 +1961,9 @@ WORKSPACE is the workspace that contains the progress token."
                                 (or (not kind?)
                                     (s-match lsp-modeline-code-actions-kind-regex kind?)))
                               actions)))
-  (if (seq-empty-p actions)
-      (setq-local global-mode-string (remove '(t (:eval lsp--modeline-code-actions-string)) global-mode-string))
-    (progn
-      (setq lsp--modeline-code-actions-string (lsp--modeline-build-code-actions-string actions))
-      (add-to-list 'global-mode-string '(t (:eval lsp--modeline-code-actions-string)))))
+  (setq lsp--modeline-code-actions-string
+        (if (seq-empty-p actions) ""
+          (lsp--modeline-build-code-actions-string actions)))
   (force-mode-line-update))
 
 (defun lsp--modeline-check-code-actions (&rest _)
@@ -1963,6 +1982,7 @@ WORKSPACE is the workspace that contains the progress token."
   :lighter ""
   (cond
    (lsp-modeline-code-actions-mode
+    (add-to-list 'global-mode-string '(t (:eval lsp--modeline-code-actions-string)))
     (add-hook 'lsp-on-idle-hook 'lsp--modeline-check-code-actions nil t))
    (t
     (remove-hook 'lsp-on-idle-hook 'lsp--modeline-check-code-actions t)
@@ -2680,12 +2700,6 @@ BINDINGS is a list of (key def cond)."
             :before
             #'lsp-describe-buffer-bindings-advice)
 
-(defcustom lsp-keymap-prefix "s-l"
-  "lsp-mode keymap prefix."
-  :group 'lsp-mode
-  :type 'string
-  :package-version '(lsp-mode . "6.3"))
-
 (defun lsp--prepend-prefix (mappings)
   (->> mappings
        (-partition 2)
@@ -2744,8 +2758,7 @@ BINDINGS is a list of (key def cond)."
 
       ;; refactoring
       "rr" lsp-rename (lsp-feature? "textDocument/rename")
-      "ro" lsp-organize-imports (lsp-feature? "textDocument/rename")
-
+      "ro" lsp-organize-imports (lsp-feature? "textDocument/codeAction")
 
       ;; actions
       "aa" lsp-execute-code-action (lsp-feature? "textDocument/codeAction")
@@ -5677,7 +5690,7 @@ It will show up only if current point has signature help."
         (lsp-request-async
          "textDocument/hover"
          (lsp--text-document-position-params)
-         (-lambda ((hover &as &Hover :range? :contents))
+         (-lambda ((hover &as &Hover? :range? :contents))
            (when hover
              (when range?
                (setq lsp--hover-saved-bounds (lsp--range-to-region range?)))
@@ -7255,7 +7268,8 @@ SESSION is the active session."
   "Directory in which the servers will be installed."
   :risky t
   :type 'directory
-  :package-version '(lsp-mode . "6.3"))
+  :package-version '(lsp-mode . "6.3")
+  :group 'lsp-mode)
 
 (defvar lsp--dependencies (ht))
 
@@ -7375,7 +7389,6 @@ When prefix UPDATE? is t force installation even if the server is present."
                    (funcall error-callback
                             (format "Async process '%s' failed with exit code %d"
                                     (process-name proc) (process-exit-status proc))))))
-   :stdout " *lsp-install*"
    :buffer " *lsp-install*"
    :noquery t))
 
