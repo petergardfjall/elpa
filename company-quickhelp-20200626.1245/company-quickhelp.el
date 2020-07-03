@@ -4,8 +4,8 @@
 
 ;; Author: Lars Andersen <expez@expez.com>
 ;; URL: https://www.github.com/expez/company-quickhelp
-;; Package-Version: 20200531.101
-;; Package-Commit: 2dda13403c49221cc98e87b4bbf8168436f27560
+;; Package-Version: 20200626.1245
+;; Package-Commit: c401603685edafa82454fbf045c835e055e8bc56
 ;; Keywords: company popup documentation quickhelp
 ;; Version: 2.2.0
 ;; Package-Requires: ((emacs "24.3") (company "0.8.9") (pos-tip "0.4.6"))
@@ -121,7 +121,7 @@ be triggered manually using `company-quickhelp-show'."
   (company-quickhelp--goto-max-line)
   (let ((truncated (< (point-at-eol) (point-max))))
     (company-quickhelp--skip-footers-backwards)
-    (list :doc (buffer-substring-no-properties start (point-at-eol))
+    (list :doc (buffer-substring start (point-at-eol))
           :truncated truncated)))
 
 (defun company-quickhelp--completing-read (prompt candidates &rest rest)
@@ -189,7 +189,13 @@ currently active `company' completion candidate."
                                   (- (if ovl (overlay-get ovl 'company-column) 1) 1)))
              (x-gtk-use-system-tooltips nil)
              (fg-bg `(,company-quickhelp-color-foreground
-                      . ,company-quickhelp-color-background)))
+                      . ,company-quickhelp-color-background))
+             (pos (save-excursion
+                    (goto-char (min (overlay-start ovl) (point)))
+                    (line-beginning-position)))
+             (dy (if (and ovl (< (overlay-get ovl 'company-height) 0))
+                     0
+                   (frame-char-height))))
         (when (and ovl doc)
           (with-no-warnings
             (if company-quickhelp-use-propertized-text
@@ -205,12 +211,12 @@ currently active `company' completion candidate."
                         (> (cdr w-h) max-height))
                     (setq doc (pos-tip-truncate-string doc max-width max-height)
                           w-h (pos-tip-string-width-height doc))))
-                  (pos-tip-show-no-propertize doc fg-bg (overlay-start ovl) nil timeout
+                  (pos-tip-show-no-propertize doc fg-bg pos nil timeout
                                               (pos-tip-tooltip-width (car w-h) (frame-char-width frame))
                                               (pos-tip-tooltip-height (cdr w-h) (frame-char-height frame) frame)
-                                              nil (+ overlay-width overlay-position) 1))
-              (pos-tip-show doc fg-bg (overlay-start ovl) nil timeout width nil
-                            (+ overlay-width overlay-position) 1))))))))
+                                              nil (+ overlay-width overlay-position) dy))
+              (pos-tip-show doc fg-bg pos nil timeout width nil
+                            (+ overlay-width overlay-position) dy))))))))
 
 (defun company-quickhelp--set-timer ()
   (when (or (null company-quickhelp--timer)
