@@ -3,7 +3,8 @@
 ;; Author: Alexandre Vassalotti <alexandre@peadrop.com>
 ;; Created: 23-Apr-2009
 ;; Version: 0.3
-;; Package-Version: 20200520.15
+;; Package-Version: 20200619.1742
+;; Package-Commit: 86b3ccf28ca437330cc42a2b3a75a1314977fcfd
 ;; Keywords: google protobuf languages
 
 ;; Redistribution and use in source and binary forms, with or without
@@ -217,7 +218,11 @@ Key bindings:
   (c-common-init 'protobuf-mode)
   (easy-menu-add protobuf-menu)
   (c-run-mode-hooks 'c-mode-common-hook 'protobuf-mode-hook)
-  (c-update-modeline))
+  (c-update-modeline)
+  (setq imenu-generic-expression
+	    '(("Message" "^[[:space:]]*message[[:space:]]+\\([[:alnum:]]+\\)" 1)
+          ("Enum" "^[[:space:]]*enum[[:space:]]+\\([[:alnum:]]+\\)" 1)
+          ("Service" "^[[:space:]]*service[[:space:]]+\\([[:alnum:]]+\\)" 1))))
 
 (provide 'protobuf-mode)
 
