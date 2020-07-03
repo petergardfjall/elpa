@@ -1,8 +1,8 @@
 ;;; rust-mode.el --- A major emacs mode for editing Rust source code -*-lexical-binding: t-*-
 
 ;; Version: 0.5.0
-;; Package-Version: 20200615.2149
-;; Package-Commit: ef152ad23cc66cdf9ca885b4d47fece69f3edbf1
+;; Package-Version: 20200618.1314
+;; Package-Commit: 00177f542976601d7f114fed82caaa3daad7b177
 ;; Author: Mozilla
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
@@ -1949,6 +1949,12 @@ See `compilation-error-regexp-alist' for help on their format.")
   "Specifications for matching `:::` hints in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
+(defvar rustc-refs-compilation-regexps
+  (let ((re "^\\([0-9]+\\)[[:space:]]*|"))
+    (cons re '(nil 1 nil 0 1)))
+  "Specifications for matching code references in rustc invocations.
+See `compilation-error-regexp-alist' for help on their format.")
+
 ;; Match test run failures and panics during compilation as
 ;; compilation warnings
 (defvar cargo-compilation-regexps
@@ -1979,6 +1985,9 @@ the compilation window until the top of the error is visible."
 
 (eval-after-load 'compile
   '(progn
+     (add-to-list 'compilation-error-regexp-alist-alist
+                  (cons 'rustc-refs rustc-refs-compilation-regexps))
+     (add-to-list 'compilation-error-regexp-alist 'rustc-refs)
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'rustc rustc-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'rustc)
