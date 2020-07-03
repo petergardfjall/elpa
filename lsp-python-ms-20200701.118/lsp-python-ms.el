@@ -3,7 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.0
-;; Package-Version: 20200520.1609
+;; Package-Version: 20200701.118
+;; Package-Commit: 268bcc7cc9f21529187aebf1bca0fc740a1486c3
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.6.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/andrew-christianson/lsp-python-ms
 ;; Keywords: languages tools
@@ -62,7 +63,7 @@
 ;; If this is nil, the language server will write cache files in a directory
 ;; sibling to the root of every project you visit")
 
-(defcustom lsp-python-ms-extra-paths '()
+(defcustom lsp-python-ms-extra-paths []
   "A list of additional paths to search for python packages.
 
 This should be a list of paths corresponding to additional python
@@ -70,7 +71,7 @@ library directories you want to search for completions.  Paths
 should be as they are (or would appear) in sys.path.  Paths will
 be prepended to the search path, and so will shadow duplicate
 names in search paths returned by the interpreter."
-  :type '(repeat directory)
+  :type 'lsp-string-vector
   :group 'lsp-python-ms)
 (make-variable-buffer-local 'lsp-python-ms-extra-paths)
 
@@ -100,6 +101,14 @@ set as `python3' to let ms-pyls use python 3 environments."
 (defcustom lsp-python-ms-nupkg-channel "stable"
   "The channel of nupkg for the Microsoft Python Language Server:
 stable, beta or daily."
+  :type 'string
+  :group 'lsp-python-ms)
+
+(defcustom lsp-python-ms-completion-add-brackets "true"
+  "Whether to add brackets after completion of functions."
+  :type '(choice
+          (const "true")
+          (const "false"))
   :type 'string
   :group 'lsp-python-ms)
 
@@ -408,12 +417,14 @@ WORKSPACE is just used for logging and _PARAMS is unused."
     (lsp--info "Microsoft Python language server is analyzing...done")))
 
 (lsp-register-custom-settings
- `(("python.analysis.cachingLevel" lsp-python-ms-cache)
+ `(("python.autoComplete.addBrackets" lsp-python-ms-completion-add-brackets)
+   ("python.analysis.cachingLevel" lsp-python-ms-cache)
    ("python.analysis.errors" lsp-python-ms-errors)
    ("python.analysis.warnings" lsp-python-ms-warnings)
    ("python.analysis.information" lsp-python-ms-information)
    ("python.analysis.disabled" lsp-python-ms-disabled)
-   ("python.analysis.autoSearchPaths" ,(<= (length lsp-python-ms-extra-paths) 0) t)))
+   ("python.analysis.autoSearchPaths" (lambda () (<= (length lsp-python-ms-extra-paths) 0)) t)
+   ("python.autoComplete.extraPaths" lsp-python-ms-extra-paths)))
 
 (dolist (mode lsp-python-ms-extra-major-modes)
   (add-to-list 'lsp-language-id-configuration `(,mode . "python")))
