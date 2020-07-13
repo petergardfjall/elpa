@@ -62,7 +62,8 @@ With a prefix argument, show the outgoing call hierarchy.
 
 ;;;***
 
-;;;### (autoloads nil nil ("lsp-treemacs-pkg.el") (0 0 0 0))
+;;;### (autoloads nil nil ("lsp-treemacs-pkg.el" "lsp-treemacs-themes.el")
+;;;;;;  (0 0 0 0))
 
 ;;;***
 
