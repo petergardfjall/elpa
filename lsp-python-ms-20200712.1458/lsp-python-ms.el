@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.0
-;; Package-Version: 20200701.118
-;; Package-Commit: 268bcc7cc9f21529187aebf1bca0fc740a1486c3
+;; Package-Version: 20200712.1458
+;; Package-Commit: 0c9abf5041192bc2f85c46c08b73c8c68ead8dfc
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.6.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/andrew-christianson/lsp-python-ms
 ;; Keywords: languages tools
