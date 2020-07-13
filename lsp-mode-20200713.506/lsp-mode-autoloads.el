@@ -127,6 +127,16 @@ Load all of the provided PROJECTS.
 (put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
 (put 'lsp-file-watch-threshold 'safe-local-variable (lambda (i) (or (numberp i) (not i))))
 
+(autoload 'lsp-breadcrumb-go-to-symbol "lsp-mode" "\
+Go to the symbol on breadcrumb at SYMBOL-POSITION.
+
+\(fn SYMBOL-POSITION)" t nil)
+
+(autoload 'lsp-breadcrumb-narrow-to-symbol "lsp-mode" "\
+Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
+
+\(fn SYMBOL-POSITION)" t nil)
+
 (autoload 'lsp "lsp-mode" "\
 Entry point for the server startup.
 When ARG is t the lsp mode will start new language server even if
