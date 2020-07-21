@@ -62,8 +62,15 @@ With a prefix argument, show the outgoing call hierarchy.
 
 ;;;***
 
-;;;### (autoloads nil nil ("lsp-treemacs-pkg.el" "lsp-treemacs-themes.el")
+;;;### (autoloads nil "lsp-treemacs-themes" "lsp-treemacs-themes.el"
 ;;;;;;  (0 0 0 0))
+;;; Generated autoloads from lsp-treemacs-themes.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-treemacs-themes" '("lsp-treemacs-theme")))
+
+;;;***
+
+;;;### (autoloads nil nil ("lsp-treemacs-pkg.el") (0 0 0 0))
 
 ;;;***
 
