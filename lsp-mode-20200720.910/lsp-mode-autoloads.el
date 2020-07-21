@@ -100,6 +100,34 @@ Load all of the provided PROJECTS.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-headerline" "lsp-headerline.el" (0 0 0
+;;;;;;  0))
+;;; Generated autoloads from lsp-headerline.el
+
+(autoload 'lsp-headerline-breadcrumb-mode "lsp-headerline" "\
+Toggle breadcrumb on headerline.
+
+If called interactively, enable Lsp-Headerline-Breadcrumb mode if
+ARG is positive, and disable it if ARG is zero or negative.  If
+called from Lisp, also enable the mode if ARG is omitted or nil,
+and toggle it if ARG is `toggle'; disable the mode otherwise.
+
+\(fn &optional ARG)" t nil)
+
+(autoload 'lsp-breadcrumb-go-to-symbol "lsp-headerline" "\
+Go to the symbol on breadcrumb at SYMBOL-POSITION.
+
+\(fn SYMBOL-POSITION)" t nil)
+
+(autoload 'lsp-breadcrumb-narrow-to-symbol "lsp-headerline" "\
+Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
+
+\(fn SYMBOL-POSITION)" t nil)
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-headerline" '("lsp-headerline-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-html" "lsp-html.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-html.el
 
@@ -126,16 +154,6 @@ Load all of the provided PROJECTS.
 ;;; Generated autoloads from lsp-mode.el
 (put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
 (put 'lsp-file-watch-threshold 'safe-local-variable (lambda (i) (or (numberp i) (not i))))
-
-(autoload 'lsp-breadcrumb-go-to-symbol "lsp-mode" "\
-Go to the symbol on breadcrumb at SYMBOL-POSITION.
-
-\(fn SYMBOL-POSITION)" t nil)
-
-(autoload 'lsp-breadcrumb-narrow-to-symbol "lsp-mode" "\
-Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
-
-\(fn SYMBOL-POSITION)" t nil)
 
 (autoload 'lsp "lsp-mode" "\
 Entry point for the server startup.
