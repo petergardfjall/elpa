@@ -150,6 +150,32 @@ Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-lens" "lsp-lens.el" (0 0 0 0))
+;;; Generated autoloads from lsp-lens.el
+
+(autoload 'lsp-lens-show "lsp-lens" "\
+Display lenses in the buffer." t nil)
+
+(autoload 'lsp-lens-hide "lsp-lens" "\
+Delete all lenses." t nil)
+
+(autoload 'lsp-lens-mode "lsp-lens" "\
+Toggle code-lens overlays.
+
+If called interactively, enable Lsp-Lens mode if ARG is positive,
+and disable it if ARG is zero or negative.  If called from Lisp,
+also enable the mode if ARG is omitted or nil, and toggle it if
+ARG is `toggle'; disable the mode otherwise.
+
+\(fn &optional ARG)" t nil)
+
+(autoload 'lsp-avy-lens "lsp-lens" "\
+Click lsp lens using `avy' package." t nil)
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-lens" '("lsp-lens-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-mode" "lsp-mode.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-mode.el
 (put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
@@ -171,6 +197,35 @@ Entry point that defers server startup until buffer is visible.
 This avoids overloading the server with many files when starting Emacs." nil nil)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-mode" '("lsp-" "make-lsp-client" "when-lsp-workspace" "with-lsp-workspace")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-modeline" "lsp-modeline.el" (0 0 0 0))
+;;; Generated autoloads from lsp-modeline.el
+
+(autoload 'lsp-modeline-code-actions-mode "lsp-modeline" "\
+Toggle code actions on modeline.
+
+If called interactively, enable Lsp-Modeline-Code-Actions mode if
+ARG is positive, and disable it if ARG is zero or negative.  If
+called from Lisp, also enable the mode if ARG is omitted or nil,
+and toggle it if ARG is `toggle'; disable the mode otherwise.
+
+\(fn &optional ARG)" t nil)
+
+(define-obsolete-function-alias 'lsp-diagnostics-modeline-mode 'lsp-modeline-diagnostics-mode "lsp-mode 7.0.1")
+
+(autoload 'lsp-modeline-diagnostics-mode "lsp-modeline" "\
+Toggle diagnostics modeline.
+
+If called interactively, enable Lsp-Modeline-Diagnostics mode if
+ARG is positive, and disable it if ARG is zero or negative.  If
+called from Lisp, also enable the mode if ARG is omitted or nil,
+and toggle it if ARG is `toggle'; disable the mode otherwise.
+
+\(fn &optional ARG)" t nil)
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-modeline" '("lsp-")))
 
 ;;;***
 
