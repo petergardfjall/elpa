@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.0
-;; Package-Version: 20200725.758
-;; Package-Commit: d42ffc2cc27ce36b5a7646ea922441f4c93b2678
+;; Package-Version: 20200804.1308
+;; Package-Commit: 7a502e6c09456cbe8b5f6c64883c79f5ce08e5a9
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-python-ms
 ;; Keywords: languages tools
@@ -77,6 +77,12 @@ the python on the head of PATH
 "
   :type 'boolean
   :group 'lsp-python-ms)
+
+(defcustom lsp-python-ms-python-executable nil
+  "Path to specify the Python executable for the Microsoft Python Language Server."
+  :type '(file :must-match t)
+  :group 'lsp-python-ms)
+
 (defcustom lsp-python-ms-extra-paths []
   "A list of additional paths to search for python packages.
 
@@ -118,12 +124,9 @@ stable, beta or daily."
   :type 'string
   :group 'lsp-python-ms)
 
-(defcustom lsp-python-ms-completion-add-brackets "true"
+(defcustom lsp-python-ms-completion-add-brackets t
   "Whether to add brackets after completion of functions."
-  :type '(choice
-          (const "true")
-          (const "false"))
-  :type 'string
+  :type 'boolean
   :group 'lsp-python-ms)
 
 ;; See https://github.com/microsoft/python-language-server/blob/master/src/Analysis/Ast/Impl/Definitions/AnalysisOptions.cs
@@ -355,7 +358,8 @@ After stopping or killing the process, retry to update."
     ;; pythons by preference: local pyenv version, local conda version
 
     (if lsp-python-ms-guess-env
-        (cond ((lsp-python-ms--valid-python venv-python))
+        (cond ((lsp-python-ms--valid-python lsp-python-ms-python-executable))
+	          ((lsp-python-ms--valid-python venv-python))
               ((lsp-python-ms--valid-python pyenv-python))
               ((lsp-python-ms--valid-python conda-python))
               ((lsp-python-ms--valid-python sys-python)))
@@ -505,7 +509,7 @@ WORKSPACE is just used for logging and _PARAMS is unused."
     (lsp--info "Microsoft Python language server is analyzing...done")))
 
 (lsp-register-custom-settings
- `(("python.autoComplete.addBrackets" lsp-python-ms-completion-add-brackets)
+ `(("python.autoComplete.addBrackets" lsp-python-ms-completion-add-brackets t)
    ("python.analysis.cachingLevel" lsp-python-ms-cache)
    ("python.analysis.errors" lsp-python-ms-errors)
    ("python.analysis.warnings" lsp-python-ms-warnings)
