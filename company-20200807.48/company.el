@@ -307,21 +307,19 @@ This doesn't include the margins and the scroll bar."
     (company-capf . "completion-at-point-functions")
     (company-clang . "Clang")
     (company-cmake . "CMake")
-    (company-css . "CSS")
+    (company-css . "CSS (obsolete backend)")
     (company-dabbrev . "dabbrev for plain text")
     (company-dabbrev-code . "dabbrev for code")
-    (company-eclim . "Eclim (an Eclipse interface)")
-    (company-elisp . "Emacs Lisp")
+    (company-elisp . "Emacs Lisp (obsolete backend)")
     (company-etags . "etags")
     (company-files . "Files")
     (company-gtags . "GNU Global")
     (company-ispell . "Ispell")
     (company-keywords . "Programming language keywords")
-    (company-nxml . "nxml")
+    (company-nxml . "nxml (obsolete backend)")
     (company-oddmuse . "Oddmuse")
     (company-semantic . "Semantic")
-    (company-tempo . "Tempo templates")
-    (company-xcode . "Xcode")))
+    (company-tempo . "Tempo templates")))
 (put 'company-safe-backends 'risky-local-variable t)
 
 (defun company-safe-backends-p (backends)
@@ -339,9 +337,10 @@ This doesn't include the margins and the scroll bar."
                                   (list 'company-nxml))
                               ,@(unless (version<= "26" emacs-version)
                                   (list 'company-css))
-                              company-eclim company-semantic company-clang
-                              company-xcode company-cmake
+                              company-semantic
+                              company-cmake
                               company-capf
+                              company-clang
                               company-files
                               (company-dabbrev-code company-gtags company-etags
                                company-keywords)
@@ -2016,14 +2015,6 @@ uses the search string to filter the completion candidates."
   (interactive)
   (company-search-mode 1))
 
-(defvar company-filter-map
-  (let ((keymap (make-keymap)))
-    (define-key keymap [remap company-search-printing-char]
-      'company-filter-printing-char)
-    (set-keymap-parent keymap company-search-map)
-    keymap)
-  "Keymap used for incrementally searching the completion candidates.")
-
 (defun company-filter-candidates ()
   "Start filtering the completion candidates incrementally.
 This works the same way as `company-search-candidates' immediately
@@ -2637,7 +2628,10 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
       ((match-beginning 1)
        ;; FIXME: Better char for 'non-printable'?
        ;; We shouldn't get any of these, but sometimes we might.
-       "\u2017")
+       ;; The official "replacement character" is not supported by some fonts.
+       ;;"\ufffd"
+       "?"
+       )
       ((match-beginning 2)
        ;; Zero-width non-breakable space.
        "")
