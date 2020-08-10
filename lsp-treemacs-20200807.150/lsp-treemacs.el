@@ -4,9 +4,9 @@
 
 ;; Author: Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "25.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (treemacs "2.5") (lsp-mode "6.0"))
+;; Package-Requires: ((emacs "26.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (treemacs "2.5") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-treemacs
-;; Version: 0.2
+;; Version: 0.3
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 
 (require 'lsp-treemacs-themes)
 (require 'lsp-mode)
+(require 'lsp-lens)
 
 (defconst lsp-treemacs-deps-buffer-name "*Java Dependency List*")
 
