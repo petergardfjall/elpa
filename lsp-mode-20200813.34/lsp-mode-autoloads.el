@@ -6,6 +6,20 @@
                          (or (file-name-directory #$) (car load-path))))
 
 
+;;;### (autoloads nil "lsp-ada" "lsp-ada.el" (0 0 0 0))
+;;; Generated autoloads from lsp-ada.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-ada" '("lsp-ada-")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-bash" "lsp-bash.el" (0 0 0 0))
+;;; Generated autoloads from lsp-bash.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-bash" '("lsp-bash-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-clients" "lsp-clients.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-clients.el
 
@@ -60,6 +74,13 @@ Explain a clang-tidy ERROR by scraping documentation from llvm.org.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-crystal" "lsp-crystal.el" (0 0 0 0))
+;;; Generated autoloads from lsp-crystal.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-crystal" '("lsp-clients-crystal-executable")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-csharp" "lsp-csharp.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-csharp.el
 
@@ -98,6 +119,14 @@ toggle it if ARG is `toggle'; disable the mode otherwise.
 (add-hook 'lsp-configure-hook (lambda nil (when lsp-auto-configure (lsp-diagnostics--enable))))
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-diagnostics" '("lsp-diagnostics-")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-dockerfile" "lsp-dockerfile.el" (0 0 0
+;;;;;;  0))
+;;; Generated autoloads from lsp-dockerfile.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-dockerfile" '("lsp-dockerfile-language-server-command")))
 
 ;;;***
 
@@ -228,6 +257,13 @@ ARG is `toggle'; disable the mode otherwise.
 Click lsp lens using `avy' package." t nil)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-lens" '("lsp-lens-")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-lua" "lsp-lua.el" (0 0 0 0))
+;;; Generated autoloads from lsp-lua.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-lua" '("lsp-clients-")))
 
 ;;;***
 
@@ -385,7 +421,8 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
-;;;### (autoloads nil nil ("lsp-mode-pkg.el" "lsp.el") (0 0 0 0))
+;;;### (autoloads nil nil ("lsp-dhall.el" "lsp-mode-pkg.el" "lsp-svelte.el"
+;;;;;;  "lsp.el") (0 0 0 0))
 
 ;;;***
 
