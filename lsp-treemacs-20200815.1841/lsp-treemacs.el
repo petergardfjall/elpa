@@ -1098,6 +1098,19 @@
       (when expand-depth (lsp-treemacs--expand 'LSP-Generic expand-depth))
       (current-buffer))))
 
+(defmacro lsp-treemacs-define-action (name keys &rest body)
+  (declare (doc-string 3) (indent 2))
+  `(defun ,name (&rest args)
+     ,(format "Code action %s" name)
+     (interactive)
+     (ignore args)
+     (if-let (node (treemacs-node-at-point))
+         (-let [,(if (cl-rest keys)
+                     keys
+                   (cl-first keys)) (button-get node :item)]
+           ,@body)
+       (treemacs-pulse-on-failure "No node at point"))))
+
 (defalias 'lsp-treemacs--show-references 'lsp-treemacs-render)
 
 (defun lsp-treemacs--set-mode-line-format (buffer title)
