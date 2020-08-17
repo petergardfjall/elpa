@@ -753,20 +753,24 @@ auto-selected name already exists."
   "Remove the project at point from the current workspace.
 With a prefix ARG select project to remove by name."
   (interactive "P")
-  (if (>= 1 (length (treemacs-workspace->projects (treemacs-current-workspace))))
-      (treemacs-pulse-on-failure "Cannot delete the last project.")
-    (let ((project (treemacs-project-at-point))
-          (save-pos))
-      (when (or arg (null project))
-        (setf project (treemacs--select-project-by-name)
-              save-pos (not (equal project (treemacs-project-at-point)))))
-      (if save-pos
-          (treemacs-save-position
-           (treemacs-do-remove-project-from-workspace project))
-        (treemacs-do-remove-project-from-workspace project))
-      (whitespace-cleanup)
-      (treemacs-pulse-on-success "Removed project %s from the workspace."
-        (propertize (treemacs-project->name project) 'face 'font-lock-type-face)))))
+  (let ((project (treemacs-project-at-point))
+        (save-pos))
+    (when (or arg (null project))
+      (setf project (treemacs--select-project-by-name)
+            save-pos (not (equal project (treemacs-project-at-point)))))
+    (pcase (if save-pos
+               (treemacs-save-position
+                (treemacs-do-remove-project-from-workspace project))
+             (treemacs-do-remove-project-from-workspace project))
+      (`success
+       (whitespace-cleanup)
+       (treemacs-pulse-on-success "Removed project %s from the workspace."
+         (propertize (treemacs-project->name project) 'face 'font-lock-type-face)))
+      (`cannot-delete-last-project
+       (treemacs-pulse-on-failure "Cannot delete the last project."))
+      (`(invalid-project ,reason)
+       (treemacs-pulse-on-failure "Cannot delete project: %s"
+         (propertize reason 'face 'font-lock-string-face))))))
 
 (defun treemacs-create-workspace ()
   "Create a new workspace."
@@ -936,7 +940,7 @@ Only works with a single project in the workspace."
             (treemacs--no-messages t)
             (treemacs-pulse-on-success nil))
        (unless (treemacs-is-path old-root :same-as new-root)
-         (treemacs-do-remove-project-from-workspace project)
+         (treemacs-do-remove-project-from-workspace project :ignore-last-project-restriction)
          (treemacs--reset-dom) ;; remove also the previous root's dom entry
          (treemacs-do-add-project-to-workspace new-root new-name)
          (treemacs-goto-file-node old-root))))))
@@ -956,7 +960,7 @@ Only works with a single project in the workspace."
         (let ((new-root (treemacs-button-get btn :path))
               (treemacs--no-messages t)
               (treemacs-pulse-on-success nil))
-          (treemacs-do-remove-project-from-workspace (treemacs-project-at-point))
+          (treemacs-do-remove-project-from-workspace (treemacs-project-at-point) :ignore-last-project-restriction)
           (treemacs--reset-dom) ;; remove also the previous root's dom entry
           (treemacs-do-add-project-to-workspace new-root (file-name-nondirectory new-root))
           (treemacs-goto-file-node new-root)
