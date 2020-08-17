@@ -13,6 +13,13 @@
 
 ;;;***
 
+;;;### (autoloads nil "lsp-angular" "lsp-angular.el" (0 0 0 0))
+;;; Generated autoloads from lsp-angular.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-angular" '("lsp-client")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-bash" "lsp-bash.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-bash.el
 
@@ -23,7 +30,7 @@
 ;;;### (autoloads nil "lsp-clients" "lsp-clients.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-clients.el
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-clients" '("expand-start-command" "lsp-" "parse-rf-language-server-")))
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-clients" '("lsp-")))
 
 ;;;***
 
@@ -130,6 +137,13 @@ toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-elixir" "lsp-elixir.el" (0 0 0 0))
+;;; Generated autoloads from lsp-elixir.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-elixir" '("lsp-clients-elixir-server-executable")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-elm" "lsp-elm.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-elm.el
 
@@ -148,6 +162,13 @@ toggle it if ARG is `toggle'; disable the mode otherwise.
 ;;; Generated autoloads from lsp-eslint.el
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-eslint" '("lsp-")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-fortran" "lsp-fortran.el" (0 0 0 0))
+;;; Generated autoloads from lsp-fortran.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-fortran" '("lsp-clients-")))
 
 ;;;***
 
@@ -174,6 +195,20 @@ Load all of the provided PROJECTS.
 ;;; Generated autoloads from lsp-go.el
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-go" '("lsp-go-")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-groovy" "lsp-groovy.el" (0 0 0 0))
+;;; Generated autoloads from lsp-groovy.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-groovy" '("lsp-groovy-")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-hack" "lsp-hack.el" (0 0 0 0))
+;;; Generated autoloads from lsp-hack.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-hack" '("lsp-clients-hack-command")))
 
 ;;;***
 
@@ -219,11 +254,11 @@ Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
 
 ;;;***
 
-;;;### (autoloads nil "lsp-intelephense" "lsp-intelephense.el" (0
-;;;;;;  0 0 0))
-;;; Generated autoloads from lsp-intelephense.el
+;;;### (autoloads nil "lsp-javascript" "lsp-javascript.el" (0 0 0
+;;;;;;  0))
+;;; Generated autoloads from lsp-javascript.el
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-intelephense" '("lsp-intelephense-")))
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-javascript" '("lsp-")))
 
 ;;;***
 
@@ -231,6 +266,13 @@ Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
 ;;; Generated autoloads from lsp-json.el
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-json" '("lsp-")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-kotlin" "lsp-kotlin.el" (0 0 0 0))
+;;; Generated autoloads from lsp-kotlin.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-kotlin" '("lsp-")))
 
 ;;;***
 
@@ -329,10 +371,25 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-php" "lsp-php.el" (0 0 0 0))
+;;; Generated autoloads from lsp-php.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-php" '("lsp-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-protocol" "lsp-protocol.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-protocol.el
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-protocol" '("dash-expand:&RangeToPoint" "lsp")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-purescript" "lsp-purescript.el" (0 0 0
+;;;;;;  0))
+;;; Generated autoloads from lsp-purescript.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-purescript" '("lsp-purescript-")))
 
 ;;;***
 
@@ -350,17 +407,24 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-r" "lsp-r.el" (0 0 0 0))
+;;; Generated autoloads from lsp-r.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-r" '("lsp-clients-r-server-command")))
+
+;;;***
+
+;;;### (autoloads nil "lsp-rf" "lsp-rf.el" (0 0 0 0))
+;;; Generated autoloads from lsp-rf.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-rf" '("expand-start-command" "lsp-rf-language-server-" "parse-rf-language-server-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-rust" "lsp-rust.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-rust.el
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-rust" '("lsp-")))
-
-;;;***
-
-;;;### (autoloads nil "lsp-serenata" "lsp-serenata.el" (0 0 0 0))
-;;; Generated autoloads from lsp-serenata.el
-
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-serenata" '("lsp-serenata-")))
 
 ;;;***
 
@@ -386,6 +450,13 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-tex" "lsp-tex.el" (0 0 0 0))
+;;; Generated autoloads from lsp-tex.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-tex" '("lsp-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-verilog" "lsp-verilog.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-verilog.el
 
@@ -407,6 +478,13 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-vimscript" "lsp-vimscript.el" (0 0 0 0))
+;;; Generated autoloads from lsp-vimscript.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-vimscript" '("lsp-clients-vim-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-xml" "lsp-xml.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-xml.el
 
@@ -421,8 +499,8 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
-;;;### (autoloads nil nil ("lsp-dhall.el" "lsp-mode-pkg.el" "lsp-svelte.el"
-;;;;;;  "lsp.el") (0 0 0 0))
+;;;### (autoloads nil nil ("lsp-cmake.el" "lsp-dhall.el" "lsp-mode-pkg.el"
+;;;;;;  "lsp-nim.el" "lsp-svelte.el" "lsp.el") (0 0 0 0))
 
 ;;;***
 
