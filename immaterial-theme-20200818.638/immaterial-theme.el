@@ -5,7 +5,7 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.5.4
+;; Version: 0.5.5
 ;; Package-Requires: ((emacs "25"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -64,7 +64,7 @@ via immaterial-color-override-alist).  The palette was created
 using the https://material.io/resources/color/ tool."
   `(("background-primary"    . ,(if (eq variant 'dark) "#012027" "#fdfdfa"))
     ("background-off"        . ,(if (eq variant 'dark) "#001b21" "#fbfbf8"))
-    ("background-on"         . ,(if (eq variant 'dark) "#01343f" "#f5f2fa"))
+    ("background-on"         . ,(if (eq variant 'dark) "#01343f" "#f5f5e7"))
     ("foreground-primary"    . ,(if (eq variant 'dark) "#dddddd" "#24292e"))
     ("foreground-secondary"  . ,(if (eq variant 'dark) "#c8c8c8" "#505055"))
     ("foreground-tertiary"   . ,(if (eq variant 'dark) "#b0b0b0" "#8e8e8e"))
