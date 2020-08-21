@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.1
-;; Package-Version: 20200811.1204
-;; Package-Commit: a884a9a4eb1a3acd3d70c776aec5e968bbdc1731
+;; Package-Version: 20200821.417
+;; Package-Commit: c193bd9ceebe43474fad4c3b6a22f8d373038fb4
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-python-ms
 ;; Keywords: languages tools
@@ -353,7 +353,7 @@ After stopping or killing the process, retry to update."
   (let* ((pyenv-python (lsp-python-ms--dominating-pyenv-python dir))
          (venv-python (lsp-python-ms--dominating-venv-python dir))
          (conda-python (lsp-python-ms--dominating-conda-python dir))
-         (sys-python (executable-find lsp-python-ms-python-executable-cmd)))
+         (sys-python (executable-find lsp-python-ms-python-executable-cmd t)))
     ;; pythons by preference: local pyenv version, local conda version
 
     (if lsp-python-ms-guess-env
