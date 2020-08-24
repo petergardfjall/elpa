@@ -12,8 +12,8 @@
 (autoload 'lsp-python-ms-update-server "lsp-python-ms" "\
 Update Microsoft Python Language Server.
 
-On Windows, if the server is running, the updating will fail.
-After stopping or killing the process, retry to update." t nil)
+  On Windows, if the server is running, the updating will fail.
+  After stopping or killing the process, retry to update." t nil)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-python-ms" '("lsp-python-ms-")))
 
