@@ -1937,7 +1937,7 @@ WORKSPACE is the workspace that contains the diagnostics."
 
 ;; textDocument/foldingRange support
 
-(cl-defstruct lsp--folding-range beg end kind children orig-folding-range)
+(cl-defstruct lsp--folding-range beg end kind children)
 
 (defvar-local lsp--cached-folding-ranges nil)
 (defvar-local lsp--cached-nested-folding-ranges nil)
@@ -1975,8 +1975,7 @@ WORKSPACE is the workspace that contains the diagnostics."
                                                 (cons start-line start-character?))
                                    :end (ht-get line-col-to-point-map
                                                 (cons end-line end-character?))
-                                   :kind kind?
-                                   :orig-folding-range range))
+                                   :kind kind?))
                                 it)
                        (seq-filter (lambda (folding-range)
                                      (< (lsp--folding-range-beg folding-range)
@@ -3789,7 +3788,7 @@ interface TextDocumentEdit {
                                              :character left-character)
                                   (&Position :line right-line
                                              :character right-character))
-  "Compare position LEFT and RIGHT."
+  "Return t if position LEFT is greater than RIGHT."
   (if (= left-line right-line)
       (> left-character right-character)
     (> left-line right-line)))
@@ -4433,24 +4432,40 @@ and the position respectively."
                 (lsp-translate-line (1+ start-line))
                 (lsp-translate-column start-char)))))
 
+(defun lsp--location-uri (loc)
+  (if (lsp-location? loc)
+      (lsp:location-uri loc)
+    (lsp:location-link-target-uri loc)))
+
+(lsp-defun lsp-goto-location ((loc &as &Location :uri :range (&Range :start)))
+  "Go to location."
+  (let ((path (lsp--uri-to-path uri)))
+    (if (f-exists? path)
+        (with-current-buffer (find-file path)
+          (goto-char (lsp--position-to-point start)))
+      (error "There is no file %s" path))))
+
+(defun lsp--location-range (loc)
+  (if (lsp-location? loc)
+      (lsp:location-range loc)
+    (lsp:location-link-target-selection-range loc)))
+
 (defun lsp--locations-to-xref-items (locations)
   "Return a list of `xref-item' from Location[] or LocationLink[]."
   (setq locations (if (sequencep locations)
                       (append locations nil)
                     (list locations)))
 
+
   (cl-labels ((get-xrefs-in-file
-               (file-locs location-link)
+               (file-locs)
                (-let [(filename . matches) file-locs]
                  (condition-case err
                      (let ((visiting (find-buffer-visiting filename))
                            (fn (lambda (loc)
                                  (lsp-with-filename filename
-                                   (lsp--xref-make-item
-                                    filename
-                                    (if location-link
-                                        (lsp:location-link-target-selection-range loc)
-                                      (lsp:location-range loc)))))))
+                                   (lsp--xref-make-item filename
+                                                        (lsp--location-range loc))))))
                        (if visiting
                            (with-current-buffer visiting
                              (seq-map fn matches))
@@ -4462,14 +4477,22 @@ and the position respectively."
                                     filename (error-message-string err)))
                    (file-error (lsp-warn "Failed to process xref entry, file-error, '%s': %s"
                                          filename (error-message-string err)))))))
-    (apply #'append
-           (if (->> locations cl-first lsp-location?)
-               (->> locations
-                    (seq-group-by (-compose #'lsp--uri-to-path #'lsp:location-uri))
-                    (seq-map (-rpartial #'get-xrefs-in-file nil)))
-             (->> locations
-                  (seq-group-by (-compose #'lsp--uri-to-path #'lsp:location-link-target-uri))
-                  (seq-map (-rpartial #'get-xrefs-in-file t)))))))
+
+    (->> locations
+         (seq-sort #'lsp--location-before-p)
+         (seq-group-by (-compose #'lsp--uri-to-path #'lsp--location-uri))
+         (seq-map #'get-xrefs-in-file)
+         (apply #'nconc))))
+
+(defun lsp--location-before-p (left right)
+  "Sort first by file, then by line, then by column."
+  (let ((left-uri (lsp--location-uri left))
+        (right-uri (lsp--location-uri right)))
+    (if (not (string= left-uri right-uri))
+        (string< left-uri right-uri)
+      (-let (((&Range :start left-start) (lsp--location-range left))
+             ((&Range :start right-start) (lsp--location-range right)))
+        (lsp--position-compare right-start left-start)))))
 
 (defun lsp--make-reference-params (&optional td-position include-declaration)
   "Make a ReferenceParam object.
@@ -7506,8 +7529,12 @@ You may find the installation instructions at https://emacs-lsp.github.io/lsp-mo
                               " ")))
        ;; no matches
        ((-> #'lsp--matching-clients? lsp--filter-clients not)
-        (lsp--error "There are no language servers supporting current mode %s registered with `lsp-mode'."
-                    major-mode))))))
+        (lsp--error "There are no language servers supporting current mode `%s' registered with `lsp-mode'.
+This issue might be caused by:
+1. You haven't registered/loaded external language server package which doesn't ship with `lsp-mode'(e. g. `lsp-java', `lsp-metals').
+2. The language server that you expect to run is not configured to run for major mode `%s'. You may check that by checking the `:major-modes' that are passed to `lsp-register-client'.
+3. `lsp-mode' doesn't have any integration for the language behind `%s'. Refer to https://emacs-lsp.github.io/lsp-mode/page/languages and https://langserver.org/ ."
+                    major-mode major-mode major-mode))))))
 
 (defun lsp--init-if-visible ()
   "Run `lsp' for the current buffer if the buffer is visible.
