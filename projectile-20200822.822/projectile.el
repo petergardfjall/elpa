@@ -4,8 +4,8 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: https://github.com/bbatsov/projectile
-;; Package-Version: 20200820.907
-;; Package-Commit: 494b561233c1b55976149a0dd76fcc4ab4928066
+;; Package-Version: 20200822.822
+;; Package-Commit: a2b5a70e204e277a738615901dfebf274c8202c2
 ;; Keywords: project, convenience
 ;; Version: 2.3.0-snapshot
 ;; Package-Requires: ((emacs "25.1") (pkg-info "0.4"))
@@ -381,6 +381,7 @@ Regular expressions can be used."
 
 (defcustom projectile-globally-ignored-directories
   '(".idea"
+    ".vscode"
     ".ensime_cache"
     ".eunit"
     ".git"
@@ -392,7 +393,8 @@ Regular expressions can be used."
     ".tox"
     ".svn"
     ".stack-work"
-    ".ccls-cache")
+    ".ccls-cache"
+    ".clangd")
   "A list of directories globally ignored by projectile.
 
 Regular expressions can be used."
@@ -1129,6 +1131,12 @@ Controlled by `projectile-require-project-root'."
      (projectile-require-project-root (error "Projectile can't find a project definition in %s" dir))
      (t default-directory))))
 
+(defun projectile-acquire-root (&optional dir)
+  "Find the current project root, and prompts the user for it if that fails.
+Provides the common idiom (projectile-ensure-root (projectile-project-root)).
+Starts the search for the project with DIR."
+  (projectile-ensure-project (projectile-project-root dir)))
+
 (defun projectile-project-p (&optional dir)
   "Check if DIR is a project.
 Defaults to the current directory if not provided
@@ -1442,6 +1450,14 @@ If PROJECT is not specified the command acts on the current project."
   (let ((project-buffers (projectile-project-buffers)))
     (dolist (buffer project-buffers)
       (funcall action buffer))))
+
+(defun projectile-process-current-project-buffers-current (action)
+  "Invoke ACTION on every project buffer with that buffer current.
+ACTION is called without arguments."
+  (let ((project-buffers (projectile-project-buffers)))
+    (dolist (buffer project-buffers)
+      (with-current-buffer buffer
+        (funcall action)))))
 
 (defun projectile-project-buffer-files (&optional project)
   "Get a list of a project's buffer files.
@@ -3669,7 +3685,7 @@ to run the replacement."
                                   (goto-char (match-beginning 0))))
             tags-loop-operate `(perform-replace ',old-text ',new-text t nil nil
                                                 nil multi-query-replace-map))
-      (tags-loop-continue (or (cons 'list files) t)))))
+      (with-no-warnings (tags-loop-continue (or (cons 'list files) t))))))
 
 ;;;###autoload
 (defun projectile-replace-regexp (&optional arg)
@@ -3697,7 +3713,8 @@ to run the replacement."
           (cl-remove-if
            #'file-directory-p
            (mapcar #'projectile-expand-root (projectile-dir-files directory)))))
-    (tags-query-replace old-text new-text nil (cons 'list files))))
+    ;; FIXME: Probably would fail on Emacs 27+, fourth argument is gone.
+    (with-no-warnings (tags-query-replace old-text new-text nil (cons 'list files)))))
 
 ;;;###autoload
 (defun projectile-kill-buffers ()
