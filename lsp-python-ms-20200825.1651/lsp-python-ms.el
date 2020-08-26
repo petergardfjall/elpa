@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.1
-;; Package-Version: 20200821.1723
-;; Package-Commit: 2f7d2a76244f6aa02569e574ecf574d19f74b4a7
+;; Package-Version: 20200825.1651
+;; Package-Commit: 38a8cefe2819bd2a5645b68763f14c89a64dc996
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-python-ms
 ;; Keywords: languages tools
@@ -107,7 +107,8 @@ set as `python3' to let ms-pyls use python 3 environments."
   :group 'lsp-python-ms)
 
 (defcustom lsp-python-ms-prefer-remote-env t
-  "If Non-nil, will prefer remote python environment."
+  "If Non-nil, will prefer remote python environment.
+Only available in Emacs 27 and above."
   :type 'boolean
   :group 'lsp-python-ms)
 
@@ -358,8 +359,9 @@ set as `python3' to let ms-pyls use python 3 environments."
   (let* ((pyenv-python (lsp-python-ms--dominating-pyenv-python dir))
          (venv-python (lsp-python-ms--dominating-venv-python dir))
          (conda-python (lsp-python-ms--dominating-conda-python dir))
-         (sys-python (executable-find lsp-python-ms-python-executable-cmd
-                                      lsp-python-ms-prefer-remote-env)))
+         (sys-python (if (>= emacs-major-version 27)
+                         (executable-find lsp-python-ms-python-executable-cmd lsp-python-ms-prefer-remote-env)
+                       (executable-find lsp-python-ms-python-executable-cmd))))
     ;; pythons by preference: local pyenv version, local conda version
 
     (if lsp-python-ms-guess-env
