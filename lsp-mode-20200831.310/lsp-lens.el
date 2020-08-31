@@ -150,8 +150,8 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
                         (or lsp--cur-workspace)
                         (lsp--workspace-client)
                         (lsp--client-server-id))))
-    (if (functionp command?)
-        command?
+    (if (functionp (lsp:command-command command?))
+        (lsp:command-command command?)
       (lambda ()
         (interactive)
         (lsp-execute-command server-id
@@ -188,6 +188,7 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
                                     title
                                     'face (or face 'lsp-lens-face)
                                     'action (lsp-lens--create-interactive-command command)
+                                    'point 'hand
                                     'mouse-face 'lsp-lens-mouse-face
                                     'local-map (lsp-lens--keymap command)))
                                  sorted)))
