@@ -101,6 +101,16 @@ when user changes current point."
   :type 'integer
   :group 'lsp-ui-sideline)
 
+(defconst lsp-ui-sideline-actions-icon-default
+  (and (bound-and-true-p lsp-ui-resources-dir)
+       (image-type-available-p 'png)
+       (expand-file-name "lightbulb.png" lsp-ui-resources-dir)))
+
+(defcustom lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default
+  "Image file for actions.  It must be a png file."
+  :type '(choice file (const :tag "Disable" nil))
+  :group 'lsp-ui-sideline)
+
 (defcustom lsp-ui-sideline-actions-kind-regex "quickfix.*\\|refactor.*"
   "Regex for the code actions kinds to show in the sideline."
   :type 'string
@@ -402,6 +412,23 @@ Push sideline overlays on `lsp-ui-sideline--ovs'."
     (user-error "No code actions on the current line"))
   (lsp-execute-code-action (lsp--select-action lsp-ui-sideline--code-actions)))
 
+(defun lsp-ui-sideline--scale-lightbulb (height)
+  (--> (frame-char-height)
+       (/ (float it) height)))
+
+(defun lsp-ui-sideline--code-actions-make-image nil
+  (let ((is-default (equal lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default)))
+    (--> `(image :type png :file ,lsp-ui-sideline-actions-icon :ascent center)
+         (append it `(:scale ,(->> (if is-default 128 (cdr (image-size it t)))
+                                   (lsp-ui-sideline--scale-lightbulb)))))))
+
+(defun lsp-ui-sideline--code-actions-image nil
+  (when lsp-ui-sideline-actions-icon
+    (with-demoted-errors "[lsp-ui-sideline]: Error with actions icon: %s"
+      (concat
+       (propertize " " 'display (lsp-ui-sideline--code-actions-make-image))
+       (propertize " " 'display '(space :width 0.3))))))
+
 (defun lsp-ui-sideline--code-actions (actions bol eol)
   "Show code ACTIONS."
   (when lsp-ui-sideline-actions-kind-regex
@@ -418,7 +445,9 @@ Push sideline overlays on `lsp-ui-sideline--ovs'."
   (seq-doseq (action actions)
     (-let* ((title (->> (lsp:code-action-title action)
                         (replace-regexp-in-string "[\n\t ]+" " ")
-                        (concat lsp-ui-sideline-code-actions-prefix)))
+                        (concat (unless lsp-ui-sideline-actions-icon
+                                  lsp-ui-sideline-code-actions-prefix))))
+            (image (lsp-ui-sideline--code-actions-image))
             (margin (lsp-ui-sideline--margin-width))
             (keymap (let ((map (make-sparse-keymap)))
                       (define-key map [down-mouse-1] (lambda () (interactive)
@@ -430,9 +459,10 @@ Push sideline overlays on `lsp-ui-sideline--ovs'."
                           (add-face-text-property 0 len 'lsp-ui-sideline-code-action nil title)
                           (add-text-properties 0 len `(keymap ,keymap mouse-face highlight) title)
                           title))
-            (string (concat (propertize " " 'display `(space :align-to (- right-fringe ,(lsp-ui-sideline--align len margin))))
+            (string (concat (propertize " " 'display `(space :align-to (- right-fringe ,(lsp-ui-sideline--align (+ len (length image)) margin))))
+                            image
                             (propertize title 'display (lsp-ui-sideline--compute-height))))
-            (pos-ov (lsp-ui-sideline--find-line (1+ (length title)) bol eol t))
+            (pos-ov (lsp-ui-sideline--find-line (+ 1 (length title) (length image)) bol eol t))
             (ov (and pos-ov (make-overlay (car pos-ov) (car pos-ov)))))
       (when pos-ov
         (overlay-put ov 'after-string string)
