@@ -4,7 +4,8 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (pfuture "1.3" ) (magit "2.90.0"))
-;; Package-Version: 20200421.1426
+;; Package-Version: 20200828.1430
+;; Package-Commit: 98632ef27b84dcd0b1f4ee32c996b5d6d96772d1
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -118,6 +119,8 @@ Will update nodes under MAGIT-ROOT with output in PFUTURE-BUFFER."
                                        (treemacs-workspace->projects (treemacs-current-workspace)))))
                            (treemacs-find-in-dom (treemacs-project->path project))))))
        (when (and dom-node
+                  (treemacs-dom-node->position dom-node)
+                  (treemacs-is-node-expanded? (treemacs-dom-node->position dom-node))
                   (null (treemacs-dom-node->refresh-flag dom-node)))
          (save-excursion
            (goto-char (treemacs-dom-node->position dom-node))
