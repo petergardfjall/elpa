@@ -430,7 +430,7 @@ The algorithm prefers to position FRAME just above the
 symbol at point, to not obstruct the view of the code that follows.
 If there's no space above in the current window, it places
 FRAME just below the symbol at point."
-  (-let* (((x . y) (--> (bounds-of-thing-at-point 'symbol)
+  (-let* (((x . y) (--> (or lsp-ui-doc--bounds (bounds-of-thing-at-point 'symbol))
                         (posn-x-y (posn-at-point (car it)))))
           (frame-relative-symbol-x (+ start-x x))
           (frame-relative-symbol-y (+ start-y y))
@@ -449,7 +449,7 @@ FRAME just below the symbol at point."
 
 (defun lsp-ui-doc--move-frame (frame)
   "Place our FRAME on screen."
-  (-let* (((left top right _bottom) (window-edges nil nil nil t))
+  (-let* (((left top right _bottom) (window-edges nil t nil t))
           (window (frame-root-window frame))
           ((width . height) (window-text-pixel-size window nil nil 10000 10000 t))
           (width (+ width (* (frame-char-width frame) 1))) ;; margins
@@ -533,8 +533,10 @@ FN is the function to call on click."
    (setq-local face-remapping-alist `((header-line lsp-ui-doc-header)))
    (setq-local window-min-height 1)
    (setq-local window-configuration-change-hook nil)
-   (setq-local window-state-change-functions nil)
-   (setq-local window-state-change-hook nil)
+   (when (boundp 'window-state-change-functions)
+     (setq-local window-state-change-functions nil))
+   (when (boundp 'window-state-change-hook)
+     (setq-local window-state-change-hook nil))
    (setq-local window-size-change-functions nil)
    (setq header-line-format (when lsp-ui-doc-header (concat " " symbol))
          mode-line-format nil
@@ -729,22 +731,31 @@ HEIGHT is the documentation number of lines."
                         :cancel-token :lsp-ui-doc-hover)))))))
       (lsp-ui-doc--hide-frame))))
 
+(defun lsp-ui-doc--extract-bounds (hover)
+  (-when-let* ((hover hover)
+               (data (lsp-get hover :range))
+               (start (-some-> (lsp:range-start data) lsp--position-to-point))
+               (end (-some-> (lsp:range-end data) lsp--position-to-point)))
+    (cons start end)))
+
 (lsp-defun lsp-ui-doc--callback ((hover &as &Hover? :contents) bounds buffer)
   "Process the received documentation.
 HOVER is the doc returned by the LS.
 BOUNDS are points of the symbol that have been requested.
 BUFFER is the buffer where the request has been made."
-  (if (and hover
-           (>= (point) (car bounds)) (<= (point) (cdr bounds))
-           (eq buffer (current-buffer)))
-      (progn
-        (setq lsp-ui-doc--bounds bounds)
-        (lsp-ui-doc--display
-         (thing-at-point 'symbol t)
-         (-some->> contents
-           lsp-ui-doc--extract
-           (replace-regexp-in-string "\r" ""))))
-    (lsp-ui-doc--hide-frame)))
+  (let ((bounds (or (lsp-ui-doc--extract-bounds hover) bounds)))
+    (if (and hover
+             (>= (point) (car bounds))
+             (<= (point) (cdr bounds))
+             (eq buffer (current-buffer)))
+        (progn
+          (setq lsp-ui-doc--bounds bounds)
+          (lsp-ui-doc--display
+           (thing-at-point 'symbol t)
+           (-some->> contents
+             lsp-ui-doc--extract
+             (replace-regexp-in-string "\r" ""))))
+      (lsp-ui-doc--hide-frame))))
 
 (defun lsp-ui-doc--delete-frame ()
   "Delete the child frame if it exists."
@@ -804,6 +815,13 @@ before, or if the new window is the minibuffer."
     (and (buffer-live-p it) it)
     (kill-buffer it)))
 
+(defun lsp-ui-doc--handle-scroll (_win _new-start)
+  (let ((frame (lsp-ui-doc--get-frame)))
+    (and frame
+         (eq lsp-ui-doc-position 'at-point)
+         (frame-visible-p frame)
+         (lsp-ui-doc--move-frame frame))))
+
 (define-minor-mode lsp-ui-doc-mode
   "Minor mode for showing hover information in child frame."
   :init-value nil
@@ -823,11 +841,13 @@ before, or if the new window is the minibuffer."
     (when (boundp 'window-state-change-functions)
       (add-hook 'window-state-change-functions 'lsp-ui-doc--on-state-changed))
     (add-hook 'post-command-hook 'lsp-ui-doc--make-request nil t)
+    (add-hook 'window-scroll-functions 'lsp-ui-doc--handle-scroll nil t)
     (add-hook 'delete-frame-functions 'lsp-ui-doc--on-delete nil t))
    (t
     (lsp-ui-doc-hide)
     (when (boundp 'window-state-change-functions)
       (remove-hook 'window-state-change-functions 'lsp-ui-doc--on-state-changed))
+    (remove-hook 'window-scroll-functions 'lsp-ui-doc--handle-scroll t)
     (remove-hook 'post-command-hook 'lsp-ui-doc--make-request t)
     (remove-hook 'delete-frame-functions 'lsp-ui-doc--on-delete t))))
 

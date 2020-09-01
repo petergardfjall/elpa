@@ -297,6 +297,11 @@ is set to t."
               1)
          (and (boundp 'fringe-mode) (equal fringe-mode 0) 1)
          0)
+     (let ((win-fringes (window-fringes)))
+       (if (or (equal (car win-fringes) 0)
+               (equal (cadr win-fringes) 0))
+           2
+         0))
      (if (and (bound-and-true-p display-line-numbers-mode)
               (< emacs-major-version 27))
          ;; This was necessary with emacs < 27, recent versions take
@@ -419,7 +424,9 @@ Push sideline overlays on `lsp-ui-sideline--ovs'."
 (defun lsp-ui-sideline--code-actions-make-image nil
   (let ((is-default (equal lsp-ui-sideline-actions-icon lsp-ui-sideline-actions-icon-default)))
     (--> `(image :type png :file ,lsp-ui-sideline-actions-icon :ascent center)
-         (append it `(:scale ,(->> (if is-default 128 (cdr (image-size it t)))
+         (append it `(:scale ,(->> (cond (is-default 128)
+                                         ((fboundp 'image-size) (cdr (image-size it t)))
+                                         (t (error "Function image-size undefined.  Use default icon")))
                                    (lsp-ui-sideline--scale-lightbulb)))))))
 
 (defun lsp-ui-sideline--code-actions-image nil
