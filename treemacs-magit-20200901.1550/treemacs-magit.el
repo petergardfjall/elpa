@@ -4,8 +4,8 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (pfuture "1.3" ) (magit "2.90.0"))
-;; Package-Version: 20200828.1430
-;; Package-Commit: 98632ef27b84dcd0b1f4ee32c996b5d6d96772d1
+;; Package-Version: 20200901.1550
+;; Package-Commit: e6252a6c5c8ec632f9882861c08d57763964d405
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -47,9 +47,9 @@
 (defun treemacs-magit--schedule-update ()
   "Schedule an update to potentially run after 3 seconds of idle time.
 In order for the update to fully run several conditions must be met:
- * A timer for an update for the given dir must not already exist
+ * A timer for an update for the given directory must not already exist
    (see `treemacs-magit--timers')
- * The dir must be part of a treemacs workspace, and
+ * The directory must be part of a treemacs workspace, and
  * The project must not be set for refresh already."
   (when treemacs-git-mode
     (let ((magit-root (treemacs--canonical-path (magit-toplevel))))
