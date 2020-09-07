@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.1
-;; Package-Version: 20200825.1651
-;; Package-Commit: 38a8cefe2819bd2a5645b68763f14c89a64dc996
+;; Package-Version: 20200903.1431
+;; Package-Commit: cca3797fbe2d0fc33fc2b1e0f938bb77de521eba
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-python-ms
 ;; Keywords: languages tools
@@ -294,29 +294,27 @@ Only available in Emacs 27 and above."
 
 (defun lsp-python-ms--venv-dir (dir)
   "Check if the directory contains a virtualenv."
-  (let ((dirs (f-directories dir)))
+  (let ((dirs (and dir (f-directories dir))))
     (car (seq-filter #'lsp-python-ms--venv-python dirs))))
 
 (defun lsp-python-ms--venv-python (dir)
   "Check if a directory is a virtualenv."
-  (let*
-      ((python? (and t (f-expand "bin/python" dir)))
-       (python3? (and python? (f-expand "bin/python3" dir)))
-       (python (and python3?
-                    (cond ((f-executable? python?) python?)
-                          ((f-executable? python3?) python3?)
-                          (t nil))))
-       (not-system
-        (and python
-             (not (string-equal (f-parent (f-parent (f-parent python)))
-                                (expand-file-name "~"))))))
-    (if not-system
-        (and not-system python))))
+  (let* ((python? (and t (f-expand "bin/python" dir)))
+         (python3? (and python? (f-expand "bin/python3" dir)))
+         (python (and python3?
+                      (cond ((f-executable? python?) python?)
+                            ((f-executable? python3?) python3?)
+                            (t nil))))
+         (not-system (and python
+                          (not (string-equal (f-parent (f-parent (f-parent python)))
+                                             (expand-file-name "~"))))))
+    (and not-system python)))
 
 (defun lsp-python-ms--dominating-venv-python (&optional dir)
   "Look for directories that look like venvs."
-  (when-let ((dominating-venv (locate-dominating-file (or dir default-directory)
-                                                      #'lsp-python-ms--venv-python)))
+  (when-let ((dominating-venv
+              (or (locate-dominating-file (or dir default-directory) #'lsp-python-ms--venv-python)
+                  (lsp-python-ms--venv-dir (locate-dominating-file (or dir default-directory) #'lsp-python-ms--venv-dir)))))
     (lsp-python-ms--venv-python dominating-venv)))
 
 (defun lsp-python-ms--dominating-conda-python (&optional dir)
