@@ -421,6 +421,13 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-racket" "lsp-racket.el" (0 0 0 0))
+;;; Generated autoloads from lsp-racket.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-racket" '("lsp-racket-lang")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-rf" "lsp-rf.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-rf.el
 

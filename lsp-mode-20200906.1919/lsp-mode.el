@@ -813,6 +813,7 @@ Changes take effect only when a new session is started."
                                         (java-mode . "java")
                                         (groovy-mode . "groovy")
                                         (python-mode . "python")
+                                        (cython-mode . "python")
                                         (lsp--render-markdown . "markdown")
                                         (rust-mode . "rust")
                                         (rustic-mode . "rust")
@@ -876,6 +877,7 @@ Changes take effect only when a new session is started."
                                         (perl-mode . "perl")
                                         (cperl-mode . "perl")
                                         (robot-mode . "robot")
+                                        (racket-mode . "racket")
                                         (nix-mode . "nix"))
   "Language id configuration.")
 
