@@ -46,6 +46,32 @@ Do not use this setup if you use the paging commands. Instead use
 `which-key-setup-side-window-bottom', which is nearly identical
 but more functional." t nil)
 
+(autoload 'which-key-add-keymap-based-replacements "which-key" "\
+Replace the description of KEY using REPLACEMENT in KEYMAP.
+KEY should take a format suitable for use in
+`kbd'. REPLACEMENT is the string to use to describe the
+command associated with KEY in the KEYMAP. You may also use a
+cons cell of the form (STRING . COMMAND) for each REPLACEMENT,
+where STRING is the replacement string and COMMAND is a symbol
+corresponding to the intended command to be replaced. In the
+latter case, which-key will verify the intended command before
+performing the replacement. COMMAND should be nil if the binding
+corresponds to a key prefix. For example,
+
+\(which-key-add-keymap-based-replacements global-map
+  \"C-x w\" \"Save as\")
+
+and
+
+\(which-key-add-keymap-based-replacements global-map
+  \"C-x w\" '(\"Save as\" . write-file))
+
+both have the same effect for the \"C-x C-w\" key binding, but
+the latter causes which-key to verify that the key sequence is
+actually bound to write-file before performing the replacement.
+
+\(fn KEYMAP KEY REPLACEMENT &rest MORE)" nil nil)
+
 (autoload 'which-key-add-key-based-replacements "which-key" "\
 Replace the description of KEY-SEQUENCE with REPLACEMENT.
 KEY-SEQUENCE is a string suitable for use in `kbd'. REPLACEMENT
@@ -123,6 +149,15 @@ Show top-level bindings in the map of the current major mode.
 
 This function will also detect evil bindings made using
 `evil-define-key' in this map. These bindings will depend on the
+current evil state. 
+
+\(fn &optional ALL)" t nil)
+
+(autoload 'which-key-show-full-major-mode "which-key" "\
+Show all bindings in the map of the current major mode.
+
+This function will also detect evil bindings made using
+`evil-define-key' in this map. These bindings will depend on the
 current evil state. " t nil)
 
 (autoload 'which-key-dump-bindings "which-key" "\
@@ -159,6 +194,12 @@ selected interactively from all available keymaps.
 
 (autoload 'which-key-show-minor-mode-keymap "which-key" "\
 Show the top-level bindings in KEYMAP using which-key. KEYMAP
+is selected interactively by mode in `minor-mode-map-alist'.
+
+\(fn &optional ALL)" t nil)
+
+(autoload 'which-key-show-full-minor-mode-keymap "which-key" "\
+Show all bindings in KEYMAP using which-key. KEYMAP
 is selected interactively by mode in `minor-mode-map-alist'." t nil)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "which-key" '("which-key-")))
