@@ -385,6 +385,13 @@ and toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-prolog" "lsp-prolog.el" (0 0 0 0))
+;;; Generated autoloads from lsp-prolog.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-prolog" '("lsp-prolog-server-command")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-protocol" "lsp-protocol.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-protocol.el
 
