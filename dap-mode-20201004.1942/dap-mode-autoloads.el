@@ -130,7 +130,7 @@ toggle it if ARG is `toggle'; disable the mode otherwise.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "dap-mode" '("dap-" "dash-expand:&dap-session")))
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "dap-mode" '("dap-")))
 
 ;;;***
 
