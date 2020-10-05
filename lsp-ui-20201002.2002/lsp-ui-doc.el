@@ -83,7 +83,7 @@
   :type 'boolean
   :group 'lsp-ui-doc)
 
-(defcustom lsp-ui-doc-position 'at-point
+(defcustom lsp-ui-doc-position 'top
   "Where to display the doc when moving the point cursor.
 This affect the position of the documentation when `lsp-ui-doc-show-with-cursor'
 is non-nil."
@@ -467,7 +467,10 @@ symbol at point, to not obstruct the view of the code that follows.
 If there's no space above in the current window, it places
 FRAME just below the symbol at point."
   (-let* (((x . y) (--> (or lsp-ui-doc--bounds (bounds-of-thing-at-point 'symbol))
-                        (posn-x-y (posn-at-point (car it)))))
+                        (or (posn-x-y (posn-at-point (car it)))
+                            (if (< (car it) (window-start))
+                                (cons 0 0)
+                              (posn-x-y (posn-at-point (1- (window-end))))))))
           (frame-relative-symbol-x (+ start-x x))
           (frame-relative-symbol-y (+ start-y y))
           (char-height (frame-char-height))
