@@ -272,6 +272,17 @@ button type on every call."
   (inline-quote
    (buffer-substring-no-properties (treemacs-button-start ,btn) (treemacs-button-end ,btn))))
 
+(define-inline treemacs--tokenize-path (path exclude-prefix)
+  "Get the PATH's single elements, excluding EXCLUDE-PREFIX.
+For example the input /A/B/C/D/E + /A/B will return [C D E].
+
+PATH: File Path
+EXCLUDE-PREFIX: File Path"
+  (declare (pure t) (side-effect-free t))
+  (inline-letevals (path exclude-prefix)
+    (inline-quote
+     (cdr (f-split (substring ,path (length ,exclude-prefix)))))))
+
 (defun treemacs--replace-recentf-entry (old-file new-file)
   "Replace OLD-FILE with NEW-FILE in the recent file list."
   ;; code taken from spacemacs - is-bound check due to being introduced after emacs24?
@@ -1196,11 +1207,13 @@ from `treemacs-copy-file' or `treemacs-move-file'."
          wrong-type-msg)
        (let* ((source (treemacs-button-get node :path))
               (source-name (treemacs--filename source))
-              (destination (treemacs--unslash (read-file-name prompt nil default-directory :must-match)))
+              (destination (treemacs--unslash (read-file-name prompt nil default-directory)))
               (target-is-dir? (file-directory-p destination))
               (target-name (if target-is-dir? (treemacs--filename source) (treemacs--filename destination)))
               (destination-dir (if target-is-dir? destination (treemacs--parent-dir destination)))
               (target (treemacs--find-repeated-file-name (f-join destination-dir target-name))))
+         (unless (file-exists-p destination-dir)
+           (make-directory destination-dir :parents))
          (when (eq action :move)
            ;; do the deletion *before* moving the file, otherwise it will no longer exist and treemacs will
            ;; not recognize it as a file path
