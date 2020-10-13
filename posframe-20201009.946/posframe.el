@@ -5,9 +5,9 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Package-Version: 20200915.921
-;; Package-Commit: 5696463afe2b0bc7b9c2705663daf9afc7ef18ad
-;; Version: 0.8.0
+;; Package-Version: 20201009.946
+;; Package-Commit: a99da9f40fa864910fd0234bb9e1b6fa52e699c3
+;; Version: 0.8.1
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
 
