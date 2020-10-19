@@ -1,2 +1,0 @@
-;;; Generated package description from /home/peterg/.emacs.d/elpa/lsp-pyright-20200826.1656/lsp-pyright.el  -*- no-byte-compile: t -*-
-(define-package "lsp-pyright" "20200826.1656" "Python LSP client using Pyright" '((emacs "26.1") (lsp-mode "7.0") (dash "2.14.1") (ht "2.0")) :commit "deef78e427b26d0f94ac134a74c1610f78f7e4e0" :keywords '("languages" "tools" "lsp") :authors '(("Arif Rezai, Vincent Zhang, Andrew Christianson")) :maintainer '("Arif Rezai, Vincent Zhang, Andrew Christianson") :url "https://github.com/emacs-lsp/lsp-pyright")

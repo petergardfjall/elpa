@@ -4,8 +4,8 @@
 
 ;; Author: Arif Rezai, Vincent Zhang, Andrew Christianson
 ;; Version: 0.2.0
-;; Package-Version: 20200826.1656
-;; Package-Commit: deef78e427b26d0f94ac134a74c1610f78f7e4e0
+;; Package-Version: 20201014.1620
+;; Package-Commit: d9e7d3cf1bdc8ee0395c8df4408b05ee3ba9c22a
 ;; Package-Requires: ((emacs "26.1") (lsp-mode "7.0") (dash "2.14.1") (ht "2.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-pyright
 ;; Keywords: languages, tools, lsp
@@ -169,12 +169,14 @@ Only available in Emacs 27 and above."
 (defun lsp-pyright--begin-progress-callback (workspace &rest _)
   "Log begin progress information.
 Current LSP WORKSPACE should be passed in."
-  (with-lsp-workspace workspace
-    (--each (lsp--workspace-buffers workspace)
-      (when (buffer-live-p it)
-        (with-current-buffer it
-          (lsp--spinner-start)))))
-  (lsp--info "Pyright language server is analyzing..."))
+  (when lsp-progress-via-spinner
+    (with-lsp-workspace workspace
+      (--each (lsp--workspace-buffers workspace)
+	(when (buffer-live-p it)
+          (with-current-buffer it
+            (lsp--spinner-start)))))
+    )
+  (lsp-log "Pyright language server is analyzing..."))
 
 (defun lsp-pyright--report-progress-callback (_workspace params)
   "Log report progress information.
@@ -185,12 +187,14 @@ First element of PARAMS will be passed into `lsp-log'."
 (defun lsp-pyright--end-progress-callback (workspace &rest _)
   "Log end progress information.
 Current LSP WORKSPACE should be passed in."
-  (with-lsp-workspace workspace
-    (--each (lsp--workspace-buffers workspace)
-      (when (buffer-live-p it)
-        (with-current-buffer it
-          (lsp--spinner-stop))))
-    (lsp--info "Pyright language server is analyzing...done")))
+  (when lsp-progress-via-spinner
+    (with-lsp-workspace workspace
+      (--each (lsp--workspace-buffers workspace)
+	(when (buffer-live-p it)
+          (with-current-buffer it
+            (lsp--spinner-stop)))))
+    )
+  (lsp-log "Pyright language server is analyzing...done"))
 
 (lsp-register-custom-settings
  `(("pyright.disableLanguageServices" lsp-pyright-disable-language-services t)
