@@ -480,13 +480,13 @@ These faces are only used if `transient-semantic-coloring'
            (insert-file-contents file)
            (read (current-buffer))))))
 
-(defun transient--pp-to-file (object file)
+(defun transient--pp-to-file (list file)
   (make-directory (file-name-directory file) t)
-  (setq object (cl-sort object #'string< :key #'car))
+  (setq list (cl-sort (copy-sequence list) #'string< :key #'car))
   (with-temp-file file
     (let ((print-level nil)
           (print-length nil))
-      (pp object (current-buffer)))))
+      (pp list (current-buffer)))))
 
 (defvar transient-values
   (transient--read-file-contents transient-values-file)
@@ -650,6 +650,8 @@ slot is non-nil."
    (argument    :initarg :argument)
    (shortarg    :initarg :shortarg)
    (value                             :initform nil)
+   (init-value  :initarg :init-value)
+   (unsavable   :initarg :unsavable   :initform nil)
    (multi-value :initarg :multi-value :initform nil)
    (always-read :initarg :always-read :initform nil)
    (allow-empty :initarg :allow-empty :initform nil)
@@ -1356,7 +1358,7 @@ then just return it.  Otherwise return the symbol whose
     (define-key map (kbd "C-q") 'transient-quit-all)
     (define-key map (kbd "C-z") 'transient-suspend)
     (define-key map (kbd "C-v") 'transient-scroll-up)
-    (define-key map (kbd "M-v") 'transient-scroll-down)
+    (define-key map (kbd "C-M-v") 'transient-scroll-down)
     (define-key map [next]      'transient-scroll-up)
     (define-key map [prior]     'transient-scroll-down)
     map)
@@ -1380,8 +1382,9 @@ edited using the same functions as used for transients.")
     (define-key map (kbd "C-t") 'transient-show)
     (define-key map (kbd "?")   'transient-help)
     (define-key map (kbd "C-h") 'transient-help)
-    (define-key map (kbd "M-p") 'transient-history-prev)
-    (define-key map (kbd "M-n") 'transient-history-next)
+    ;; Also bound to "C-x p" and "C-x n" in transient-common-commands.
+    (define-key map (kbd "C-M-p") 'transient-history-prev)
+    (define-key map (kbd "C-M-n") 'transient-history-next)
     map)
   "Top-level keymap used by all transients.")
 
@@ -1414,8 +1417,8 @@ edited using the same functions as used for transients.")
          ["Value commands"
           ("C-x s  " "Set"            transient-set)
           ("C-x C-s" "Save"           transient-save)
-          ("M-p    " "Previous value" transient-history-prev)
-          ("M-n    " "Next value"     transient-history-next)]
+          ("C-x p  " "Previous value" transient-history-prev)
+          ("C-x n  " "Next value"     transient-history-next)]
          ["Sticky commands"
           ;; Like `transient-sticky-map' except that
           ;; "C-g" has to be bound to a different command.
@@ -2311,6 +2314,13 @@ abstract `transient-infix' class must implement this function.
 Non-infix suffix commands usually don't have a value."
   nil)
 
+(cl-defmethod transient-init-value :around ((obj transient-infix))
+  "If bound, then call OBJ's `init-value' function.
+Otherwise call the primary method according to objects class."
+  (if (slot-boundp obj 'init-value)
+      (funcall (oref obj init-value) obj)
+    (cl-call-next-method obj)))
+
 (cl-defmethod transient-init-value ((obj transient-prefix))
   (if (slot-boundp obj 'value)
       (oref obj value)
@@ -2589,16 +2599,24 @@ If the current command was invoked from the transient prefix
 command PREFIX, then return the active infix arguments.  If
 the current command was not invoked from PREFIX, then return
 the set, saved or default value for PREFIX."
+  (delq nil (mapcar 'transient-infix-value (transient-suffixes prefix))))
+
+(defun transient-suffixes (prefix)
+  "Return the suffix objects of the transient prefix command PREFIX."
   (if (eq transient-current-command prefix)
-      (delq nil (mapcar 'transient-infix-value transient-current-suffixes))
+      transient-current-suffixes
     (let ((transient--prefix nil)
           (transient--layout nil)
           (transient--suffixes nil))
       (transient--init-objects prefix nil nil)
-      (delq nil (mapcar 'transient-infix-value transient--suffixes)))))
+      transient--suffixes)))
 
 (defun transient-get-value ()
-  (delq nil (mapcar 'transient-infix-value transient-current-suffixes)))
+  (delq nil (mapcar (lambda (obj)
+                      (and (or (not (slot-exists-p obj 'unsavable))
+                               (not (oref obj unsavable)))
+                           (transient-infix-value obj)))
+                    transient-current-suffixes)))
 
 (cl-defgeneric transient-infix-value (obj)
   "Return the value of the suffix object OBJ.
@@ -2647,7 +2665,7 @@ contribute to the value of the transient."
   nil)
 
 (cl-defmethod transient-infix-value ((obj transient-files))
-  "Return (concat ARGUMENT VALUE) or nil.
+  "Return (cons ARGUMENT VALUE) or nil.
 
 ARGUMENT and VALUE are the values of the respective slots of OBJ.
 If VALUE is nil, then return nil.  VALUE may be the empty string,

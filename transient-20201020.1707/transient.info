@@ -44,7 +44,7 @@ reading a new value in the minibuffer.
    Calling a suffix command usually causes the transient to be exited
 but suffix commands can also be configured to not exit the transient.
 
-This manual is for Transient version 0.2.0 (v0.2.0-38-ga3e53633+1).
+This manual is for Transient version 0.2.0 (v0.2.0-49-ga3517747+1).
 
      Copyright (C) 2018-2020 Jonas Bernoulli <jonas@bernoul.li>
 
@@ -430,12 +430,14 @@ value is saved to its history.  These values can be cycled through the
 same way one can cycle through the history of commands that read
 user-input in the minibuffer.
 
-‘M-p’     (‘transient-history-prev’)
+‘C-M-p’     (‘transient-history-prev’)
+‘C-x p’     (‘transient-history-prev’)
 
      This command switches to the previous value used for the active
      transient.
 
-‘M-n’     (‘transient-history-next’)
+‘C-M-n’     (‘transient-history-next’)
+‘C-x n’     (‘transient-history-next’)
 
      This command switches to the next value used for the active
      transient.
@@ -1190,7 +1192,7 @@ The preferred way of doing that is to call the ‘transient-args’
 function, which for infix arguments serves about the same purpose as
 ‘prefix-arg’ serves for prefix arguments.
 
- -- Function: transient-args &optional prefix
+ -- Function: transient-args prefix
 
      This function returns the value of the transient prefix command
      PREFIX.
@@ -1199,6 +1201,13 @@ function, which for infix arguments serves about the same purpose as
      command PREFIX, then it returns the active infix arguments.  If the
      current command was not invoked from PREFIX, then it returns the
      set, saved or default value for PREFIX.
+
+ -- Function: transient-suffixes prefix
+
+     This function returns the suffixes of the transient prefix command
+     PREFIX.  This is a list of objects.  This function should only be
+     used if you need the objects (as opposed to just their values) and
+     if the current command is not being invoked from PREFIX.
 
  -- Variable: transient-current-suffixes
 
@@ -1809,9 +1818,24 @@ They are defined here anyway to allow sharing certain methods.
 
    • ‘shortarg’ The short argument, e.g.  ‘-v’.
 
+   • ‘value’ The value.  Should not be accessed directly.
+
+   • ‘init-value’ Function that is responsable for setting the object’s
+     value.  If bound, then this is called with the object as the only
+     argument.  Usually this is not bound, in which case the object’s
+     primary ‘transient-init-value’ method is called instead.
+
+   • ‘unsavable’ Whether the value of the suffix is not saved as part of
+     the prefixes.
+
    • ‘multi-value’ For options, whether the option can have multiple
      values.  If non-nil, then default to use
      ‘completing-read-multiple’.
+
+   • ‘always-read’ For options, whether to read a value on every
+     invocation.  If this is nil, then options that have a value are
+     simply unset and have to be invoked a second time to set a new
+     value.
 
    • ‘allow-empty’ For options, whether the empty string is a valid
      value.
@@ -2275,18 +2299,20 @@ Appendix B Keystroke Index
                                                                (line 26)
 * C-h:                                   Getting Help for Suffix Commands.
                                                                (line 10)
+* C-M-n:                                 Using History.        (line 17)
+* C-M-p:                                 Using History.        (line 11)
 * C-q:                                   Aborting and Resuming Transients.
                                                                (line 36)
 * C-x C-s:                               Saving Values.        (line 25)
 * C-x l:                                 Enabling and Disabling Suffixes.
                                                                (line 49)
+* C-x n:                                 Using History.        (line 18)
+* C-x p:                                 Using History.        (line 12)
 * C-x s:                                 Saving Values.        (line 20)
 * C-x t:                                 Common Suffix Commands.
                                                                (line 16)
 * C-z:                                   Aborting and Resuming Transients.
                                                                (line 42)
-* M-n:                                   Using History.        (line 16)
-* M-p:                                   Using History.        (line 11)
 * M-x transient-resume:                  Aborting and Resuming Transients.
                                                                (line 55)
 
@@ -2301,8 +2327,10 @@ Appendix C Command Index
 
 * transient-help:                        Getting Help for Suffix Commands.
                                                                (line 10)
-* transient-history-next:                Using History.        (line 16)
+* transient-history-next:                Using History.        (line 17)
+* transient-history-next <1>:            Using History.        (line 18)
 * transient-history-prev:                Using History.        (line 11)
+* transient-history-prev <1>:            Using History.        (line 12)
 * transient-quit-all:                    Aborting and Resuming Transients.
                                                                (line 36)
 * transient-quit-one:                    Aborting and Resuming Transients.
@@ -2388,6 +2416,8 @@ Appendix D Function Index
                                                               (line  30)
 * transient-suffix-put:                  Modifying Existing Transients.
                                                               (line  65)
+* transient-suffixes:                    Using Infix Arguments.
+                                                              (line  32)
 
 
 File: transient.info,  Node: Variable Index,  Prev: Function Index,  Up: Top
@@ -2399,11 +2429,11 @@ Appendix E Variable Index
 * Menu:
 
 * transient-current-command:             Using Infix Arguments.
-                                                              (line  47)
+                                                              (line  54)
 * transient-current-prefix:              Using Infix Arguments.
-                                                              (line  41)
+                                                              (line  48)
 * transient-current-suffixes:            Using Infix Arguments.
-                                                              (line  32)
+                                                              (line  39)
 * transient-default-level:               Enabling and Disabling Suffixes.
                                                               (line  38)
 * transient-detect-key-conflicts:        Other Options.       (line 137)
@@ -2411,8 +2441,8 @@ Appendix E Variable Index
 * transient-enable-popup-navigation:     Other Options.       (line  28)
 * transient-force-fixed-pitch:           Other Options.       (line 151)
 * transient-highlight-mismatched-keys:   Other Options.       (line  96)
-* transient-history-file:                Using History.       (line  33)
-* transient-history-limit:               Using History.       (line  38)
+* transient-history-file:                Using History.       (line  35)
+* transient-history-limit:               Using History.       (line  40)
 * transient-levels-file:                 Enabling and Disabling Suffixes.
                                                               (line  44)
 * transient-mode-line-format:            Other Options.       (line  71)
@@ -2435,38 +2465,38 @@ Node: Common Suffix Commands13487
 Node: Saving Values15241
 Ref: Saving Values-Footnote-116499
 Node: Using History16769
-Node: Getting Help for Suffix Commands18310
-Node: Enabling and Disabling Suffixes19703
-Node: Other Commands22993
-Node: Other Options23949
-Node: Modifying Existing Transients31073
-Node: Defining New Commands34475
-Node: Defining Transients34811
-Node: Binding Suffix and Infix Commands37242
-Node: Group Specifications38096
-Node: Suffix Specifications42088
-Node: Defining Suffix and Infix Commands46046
-Node: Using Infix Arguments49244
-Node: Transient State51464
-Node: Classes and Methods57337
-Node: Group Classes59551
-Node: Group Methods61467
-Node: Prefix Classes62716
-Node: Suffix Classes63808
-Node: Suffix Methods66052
-Node: Suffix Value Methods66373
-Node: Suffix Format Methods69133
-Node: Prefix Slots70585
-Node: Suffix Slots73060
-Node: Predicate Slots75911
-Node: Related Abstractions and Packages77159
-Node: Comparison With Prefix Keys and Prefix Arguments77446
-Node: Comparison With Other Packages87758
-Node: FAQ91948
-Node: Keystroke Index95682
-Node: Command Index97316
-Node: Function Index99103
-Node: Variable Index103333
+Node: Getting Help for Suffix Commands18408
+Node: Enabling and Disabling Suffixes19801
+Node: Other Commands23091
+Node: Other Options24047
+Node: Modifying Existing Transients31171
+Node: Defining New Commands34573
+Node: Defining Transients34909
+Node: Binding Suffix and Infix Commands37340
+Node: Group Specifications38194
+Node: Suffix Specifications42186
+Node: Defining Suffix and Infix Commands46144
+Node: Using Infix Arguments49342
+Node: Transient State51871
+Node: Classes and Methods57744
+Node: Group Classes59958
+Node: Group Methods61874
+Node: Prefix Classes63123
+Node: Suffix Classes64215
+Node: Suffix Methods66459
+Node: Suffix Value Methods66780
+Node: Suffix Format Methods69540
+Node: Prefix Slots70992
+Node: Suffix Slots73467
+Node: Predicate Slots76993
+Node: Related Abstractions and Packages78241
+Node: Comparison With Prefix Keys and Prefix Arguments78528
+Node: Comparison With Other Packages88840
+Node: FAQ93030
+Node: Keystroke Index96764
+Node: Command Index98544
+Node: Function Index100477
+Node: Variable Index104844
 
 End Tag Table
 
