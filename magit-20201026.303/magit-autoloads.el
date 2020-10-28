@@ -168,7 +168,7 @@ This command starts such a bisect session by asking for a know
 good and a bad commit.  To move the session forward use the
 other actions from the bisect transient command (\\<magit-status-mode-map>\\[magit-bisect]).
 
-\(fn BAD GOOD)" t nil)
+\(fn BAD GOOD ARGS)" t nil)
 
 (autoload 'magit-bisect-reset "magit-bisect" "\
 After bisecting, cleanup bisection state and return to original `HEAD'." t nil)
@@ -195,7 +195,7 @@ Unlike `git bisect run' this can be used before bisecting has
 begun.  In that case it behaves like `git bisect start; git
 bisect run'.
 
-\(fn CMDLINE &optional BAD GOOD)" t nil)
+\(fn CMDLINE &optional BAD GOOD ARGS)" t nil)
 
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "magit-bisect" '("magit-")))
 
@@ -1762,7 +1762,7 @@ With a prefix argument reset the working tree otherwise don't.
 ;;;### (autoloads nil "magit-section" "magit-section.el" (0 0 0 0))
 ;;; Generated autoloads from magit-section.el
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "magit-section" '("magit-")))
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "magit-section" '("isearch-clean-overlays@magit-mode" "magit-")))
 
 ;;;***
 
