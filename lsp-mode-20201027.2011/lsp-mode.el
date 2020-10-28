@@ -480,32 +480,32 @@ the server has requested that."
 ;;;###autoload(put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
 
 (defcustom lsp-file-watch-ignored '(; SCM tools
-                                    "[/\\\\]\\.git$"
-                                    "[/\\\\]\\.hg$"
-                                    "[/\\\\]\\.bzr$"
-                                    "[/\\\\]_darcs$"
-                                    "[/\\\\]\\.svn$"
-                                    "[/\\\\]_FOSSIL_$"
+                                    "[/\\\\]\\.git\\'"
+                                    "[/\\\\]\\.hg\\'"
+                                    "[/\\\\]\\.bzr\\'"
+                                    "[/\\\\]_darcs\\'"
+                                    "[/\\\\]\\.svn\\'"
+                                    "[/\\\\]_FOSSIL_\\'"
                                     ;; IDE or build tools
-                                    "[/\\\\]\\.idea$"
-                                    "[/\\\\]\\.ensime_cache$"
-                                    "[/\\\\]\\.eunit$"
-                                    "[/\\\\]node_modules$"
-                                    "[/\\\\]\\.fslckout$"
-                                    "[/\\\\]\\.tox$"
-                                    "[/\\\\]dist$"
-                                    "[/\\\\]dist-newstyle$"
-                                    "[/\\\\]\\.stack-work$"
-                                    "[/\\\\]\\.bloop$"
-                                    "[/\\\\]\\.metals$"
-                                    "[/\\\\]target$"
-                                    "[/\\\\]\\.ccls-cache$"
-                                    "[/\\\\]\\.vscode$"
+                                    "[/\\\\]\\.idea\\'"
+                                    "[/\\\\]\\.ensime_cache\\'"
+                                    "[/\\\\]\\.eunit\\'"
+                                    "[/\\\\]node_modules"
+                                    "[/\\\\]\\.fslckout\\'"
+                                    "[/\\\\]\\.tox\\'"
+                                    "[/\\\\]dist\\'"
+                                    "[/\\\\]dist-newstyle\\'"
+                                    "[/\\\\]\\.stack-work\\'"
+                                    "[/\\\\]\\.bloop\\'"
+                                    "[/\\\\]\\.metals\\'"
+                                    "[/\\\\]target\\'"
+                                    "[/\\\\]\\.ccls-cache\\'"
+                                    "[/\\\\]\\.vscode\\'"
                                     ;; Autotools output
-                                    "[/\\\\]\\.deps$"
-                                    "[/\\\\]build-aux$"
-                                    "[/\\\\]autom4te.cache$"
-                                    "[/\\\\]\\.reference$")
+                                    "[/\\\\]\\.deps\\'"
+                                    "[/\\\\]build-aux\\'"
+                                    "[/\\\\]autom4te.cache\\'"
+                                    "[/\\\\]\\.reference\\'")
   "List of regexps matching directory paths which won't be monitored when creating file watches."
   :group 'lsp-mode
   :type '(repeat string)
@@ -4481,8 +4481,7 @@ and the position respectively."
          (inhibit-field-text-motion t))
     (save-excursion
       (goto-char point)
-      (buffer-substring-no-properties (line-beginning-position)
-                                      (line-end-position)))))
+      (buffer-substring (line-beginning-position) (line-end-position)))))
 
 (lsp-defun lsp--xref-make-item (filename (&Range :start (start &as &Position :character start-char :line start-line)
                                                  :end (end &as &Position :character end-char)))
@@ -4518,11 +4517,15 @@ and the position respectively."
     (lsp:location-link-target-selection-range loc)))
 
 (defun lsp--locations-to-xref-items (locations)
-  "Return a list of `xref-item' from Location[] or LocationLink[]."
-  (setq locations (if (sequencep locations)
-                      (append locations nil)
-                    (list locations)))
-
+  "Return a list of `xref-item' given LOCATIONS, which can be of
+type Location, LocationLink, Location[] or LocationLink[]."
+  (setq locations
+        (if (and (sequencep locations)
+                 (let ((fst (lsp-seq-first locations)))
+                   (or (lsp-location? fst)
+                       (lsp-location-link? fst))))
+            (append locations nil)
+          (when locations (list locations))))
 
   (cl-labels ((get-xrefs-in-file
                (file-locs)
@@ -6116,6 +6119,12 @@ WORKSPACE is the active workspace."
   (let ((json-encoding-pretty-print t))
     (json-encode (json-read-from-string msg))))
 
+(defvar lsp-parsed-message nil
+  "This will store the string representation of the json message.
+
+In some cases like #1807 we lose information during json
+deserialization.")
+
 (defun lsp--create-filter-function (workspace)
   "Make filter for the workspace."
   (let ((body-received 0)
@@ -6154,22 +6163,22 @@ WORKSPACE is the active workspace."
             (push this-body body)
             (setf body-received (+ body-received body-bytes))
             (when (>= chunk-length left-to-receive)
-              (lsp--parser-on-message
-               (condition-case err
-                   (let ((parsed-message (decode-coding-string
-                                          (apply #'concat
-                                                 (nreverse
-                                                  (prog1 body
-                                                    (setf leftovers nil
-                                                          body-length nil
-                                                          body-received nil
-                                                          body nil)))) 'utf-8)))
-                     (lsp--read-json parsed-message))
-                 (error
-                  (lsp-warn "Failed to parse the following chunk:\n'''\n%s\n'''\nwith message %s"
-                            (concat leftovers input)
-                            err)))
-               workspace))))))))
+              (let ((lsp-parsed-message (decode-coding-string
+                                         (apply #'concat
+                                                (nreverse
+                                                 (prog1 body
+                                                   (setf leftovers nil
+                                                         body-length nil
+                                                         body-received nil
+                                                         body nil)))) 'utf-8)))
+                (lsp--parser-on-message
+                 (condition-case err
+                     (lsp--read-json lsp-parsed-message)
+                   (error
+                    (lsp-warn "Failed to parse the following chunk:\n'''\n%s\n'''\nwith message %s"
+                              (concat leftovers input)
+                              err)))
+                 workspace)))))))))
 
 (defvar-local lsp--line-col-to-point-hash-table nil
   "Hash table with keys (line . col) and values that are either point positions or markers.")
@@ -6750,24 +6759,38 @@ SESSION is the active session."
            (lsp--spinner-stop)
            (signal 'lsp-empty-response-error (list "initialize")))
 
-         (setf (lsp--workspace-server-capabilities workspace) (lsp:initialize-result-capabilities
-                                                               response)
-               (lsp--workspace-status workspace) 'initialized)
+         (let* ((capabilities (lsp:initialize-result-capabilities response))
+                (json-object-type 'hash-table)
+                (text-document-sync (-some-> lsp-parsed-message
+                                      (json-read-from-string)
+                                      (ht-get "result")
+                                      (ht-get "capabilities")
+                                      (ht-get "textDocumentSync")))
+                (save (when (ht? text-document-sync)
+                        (ht-get text-document-sync "save"))))
+           ;; see #1807
+           (when (and (ht? save) (ht-empty? save))
+             (-> capabilities
+                 (lsp:server-capabilities-text-document-sync?)
+                 (lsp:set-text-document-sync-options-save? save)))
 
-         (with-lsp-workspace workspace
-           (lsp-notify "initialized" lsp--empty-ht))
+           (setf (lsp--workspace-server-capabilities workspace) capabilities
+                 (lsp--workspace-status workspace) 'initialized)
 
-         (when initialized-fn (funcall initialized-fn workspace))
+           (with-lsp-workspace workspace
+             (lsp-notify "initialized" lsp--empty-ht))
 
-         (->> workspace
-              (lsp--workspace-buffers)
-              (mapc (lambda (buffer)
-                      (lsp-with-current-buffer buffer
-                        (lsp--open-in-workspace workspace)))))
+           (when initialized-fn (funcall initialized-fn workspace))
 
-         (with-lsp-workspace workspace
-           (run-hooks 'lsp-after-initialize-hook))
-         (lsp--info "%s initialized successfully" (lsp--workspace-print workspace)))
+           (->> workspace
+                (lsp--workspace-buffers)
+                (mapc (lambda (buffer)
+                        (lsp-with-current-buffer buffer
+                          (lsp--open-in-workspace workspace)))))
+
+           (with-lsp-workspace workspace
+             (run-hooks 'lsp-after-initialize-hook))
+           (lsp--info "%s initialized successfully" (lsp--workspace-print workspace))))
        :mode 'detached))
     workspace))
 
@@ -7659,13 +7682,14 @@ When ARG is t the lsp mode will start new language server even if
 there is language server which can handle current language. When
 ARG is nil current file will be opened in multi folder language
 server if there is such. When `lsp' is called with prefix
-argument ask the user to select which language server to start. "
+argument ask the user to select which language server to start."
   (interactive "P")
 
   (when (and lsp-auto-configure (not lsp--client-packages-required))
     (seq-do (lambda (package)
               ;; loading client is slow and `lsp' can be called repeatedly
-              (unless (featurep package) (require package nil t)))
+              (unless (featurep package)
+                (require package nil t)))
             lsp-client-packages)
     (setq lsp--client-packages-required t))
 
