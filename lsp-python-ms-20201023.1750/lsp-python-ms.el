@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.1
-;; Package-Version: 20200917.1326
-;; Package-Commit: a0c56f429e14cc9086fd06aa764e9aab697970d7
+;; Package-Version: 20201023.1750
+;; Package-Commit: c4ebc7a11398733055a1dc07f9cffacd04d1c2dc
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "6.1"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-python-ms
 ;; Keywords: languages tools
@@ -306,8 +306,9 @@ After stopping or killing the process, retry to update."
                             ((f-executable? python3?) python3?)
                             (t nil))))
          (not-system (and python
-                          (not (string-equal (f-parent (f-parent (f-parent python)))
-                                             (expand-file-name "~"))))))
+                          (let ((dir-parent (f-parent dir)))
+                            (not (or (string-equal dir-parent (expand-file-name "~"))
+                                     (string-equal dir-parent "/")))))))
     (and not-system python)))
 
 (defun lsp-python-ms--dominating-venv-python (&optional dir)
