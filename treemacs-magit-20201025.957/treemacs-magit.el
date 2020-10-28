@@ -4,8 +4,8 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (pfuture "1.3" ) (magit "2.90.0"))
-;; Package-Version: 20200901.1550
-;; Package-Commit: e6252a6c5c8ec632f9882861c08d57763964d405
+;; Package-Version: 20201025.957
+;; Package-Commit: ed7de5d0a25b19d9ad5f376b5e447123b418964b
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -76,7 +76,10 @@ filewatch-mode's mechanics to update the entire project."
             (dom-node (treemacs-find-in-dom project-root)))
        (when (and dom-node
                   (null (treemacs-dom-node->refresh-flag dom-node)))
-         (treemacs--set-refresh-flags project-root 'magit-refresh project-root))))))
+         ;; adding a number of change events is the easiest way to cause a full directory
+         ;; refresh without touching treemacs proper
+         (dotimes (_ 8)
+           (treemacs--set-refresh-flags project-root 'magit-refresh project-root)))))))
 
 (defun treemacs-magit--extended-git-mode-update (magit-root)
   "Update the project at the given MAGIT-ROOT.
