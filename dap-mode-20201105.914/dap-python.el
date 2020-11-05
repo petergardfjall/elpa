@@ -84,41 +84,13 @@ https://github.com/pyenv/pyenv-which-ext."
   (type nil :type string)
   (location nil :type dap-python--location))
 
-(cl-defgeneric dap-python--equal (lhs rhs)
-  (:documentation "Check if lhs and rhs are equal"))
-
-(cl-defmethod dap-python--equal ((lhs symbol) (rhs symbol))
-  (eq lhs rhs))
-
-(cl-defmethod dap-python--equal ((lhs integer) (rhs integer))
-  (eq lhs rhs))
-
-(cl-defmethod dap-python--equal ((lhs string) (rhs string))
-  (string-equal lhs rhs))
-
-(cl-defmethod dap-python--equal ((lhs list) (rhs list))
-  (and (dap-python--equal (length lhs) (length rhs))
-       (-reduce (lambda (x y) (and x y)) (-zip-with 'dap-python--equal lhs rhs))))
-
-(cl-defmethod dap-python--equal ((lhs dap-python--point) (rhs dap-python--point))
-  (and (dap-python--equal (dap-python--point-line lhs) (dap-python--point-line rhs))
-       (dap-python--equal (dap-python--point-character lhs) (dap-python--point-character rhs))))
-
-(cl-defmethod dap-python--equal ((lhs dap-python--location) (rhs dap-python--location))
-  (and (dap-python--equal (dap-python--location-start lhs) (dap-python--location-start rhs))
-       (dap-python--equal (dap-python--location-end lhs) (dap-python--location-end rhs))))
-
-(cl-defmethod dap-python--equal ((lhs dap-python--symbol) (rhs dap-python--symbol))
-  (and (dap-python--equal (dap-python--symbol-name lhs) (dap-python--symbol-name rhs))
-       (dap-python--equal (dap-python--symbol-type lhs) (dap-python--symbol-type rhs))
-       (dap-python--equal (dap-python--symbol-location lhs) (dap-python--symbol-location rhs))))
-
 (lsp-defun dap-python--parse-lsp-symbol
-  ((&SymbolInformation :name :kind
-                       :location (&Location :range (&Range :start (&Position :line start-line
-                                                                             :character start-character)
-                                                           :end (&Position :line end-line
-                                                                           :character end-character)))))
+  ((&DocumentSymbol
+    :name :kind
+    :selection-range (&Range :start (&Position :line start-line
+                                               :character start-character)
+                             :end (&Position :line end-line
+                                             :character end-character))))
   (make-dap-python--symbol
    :name name
    :type (alist-get kind lsp--symbol-kind)
@@ -140,49 +112,57 @@ https://github.com/pyenv/pyenv-which-ext."
 
 (defun dap-python--test-p (lsp-symbol)
   (let ((name (dap-python--symbol-name lsp-symbol)))
-    (and (dap-python--equal (dap-python--symbol-type lsp-symbol) "Function")
-	       (s-starts-with? "test_" name))))
+    (and (string= (dap-python--symbol-type lsp-symbol) "Function")
+         (s-starts-with? "test_" name))))
 
 (defun dap-python--test-class-p (test-symbol lsp-symbol)
-  (when (dap-python--equal (dap-python--symbol-type lsp-symbol) "Class")
+  (when (string= (dap-python--symbol-type lsp-symbol) "Class")
     (let* ((class-location (dap-python--symbol-location lsp-symbol))
-	         (class-start-line (-> class-location dap-python--location-start dap-python--point-line))
-	         (class-end-line (-> class-location dap-python--location-end dap-python--point-line))
-	         (test-start-line (-> test-symbol dap-python--symbol-location dap-python--location-start dap-python--point-line)))
-	    (and (> test-start-line class-start-line)
-	         (< test-start-line class-end-line)))))
+           (class-start-line (-> class-location dap-python--location-start dap-python--point-line))
+           (class-end-line (-> class-location dap-python--location-end dap-python--point-line))
+           (test-start-line (-> test-symbol dap-python--symbol-location dap-python--location-start dap-python--point-line)))
+      (and (> test-start-line class-start-line)
+           (< test-start-line class-end-line)))))
 
 (defun dap-python--nearest-test (lsp-symbols)
-  (let* ((reversed (reverse lsp-symbols))
-	       (test-symbol (-first 'dap-python--test-p reversed))
-	       (class-symbol (-first (-partial 'dap-python--test-class-p test-symbol) reversed)))
-    (if (eq nil class-symbol)
-	      (concat "::" (dap-python--symbol-name test-symbol))
-      (concat "::" (dap-python--symbol-name class-symbol) "::" (dap-python--symbol-name test-symbol)))))
+  (cl-callf reverse lsp-symbols)
+  (when-let ((test-symbol (-first 'dap-python--test-p lsp-symbols)))
+    (let ((class-symbol
+           (-first (-partial 'dap-python--test-class-p test-symbol)
+                   lsp-symbols)))
+      (if class-symbol
+          (concat "::" (dap-python--symbol-name class-symbol)
+                  "::" (dap-python--symbol-name test-symbol))
+        (concat "::" (dap-python--symbol-name test-symbol))))))
 
 (defun dap-python--cursor-position ()
   (make-dap-python--point :line (line-number-at-pos)
-			                    :character (current-column)))
+                          :character (current-column)))
 
 (defun dap-python--test-at-point ()
   (->> (lsp--get-document-symbols)
-       (mapcar 'dap-python--parse-lsp-symbol)
+       (mapcar #'dap-python--parse-lsp-symbol)
        (dap-python--symbols-before-point (dap-python--cursor-position))
        dap-python--nearest-test))
 
 (defun dap-python--template (template-name)
-  (->> dap-debug-template-configurations
-       (-first (-lambda ((name)) (dap-python--equal name template-name)))
-       cdr))
+  "Return the debug template whose name is TEMPLATE-NAME.
+For the name, only the template's `car' is checked, not its
+`:name' property."
+  (--first (string= template-name it) dap-debug-template-configurations))
 
-(defun dap-python--debug-test-at-point ()
+(defalias 'dap-python--debug-test-at-point #'dap-python-debug-test-at-point)
+(defun dap-python-debug-test-at-point ()
+  "Debug the pytest test under the cursor."
   (interactive)
   (dap-debug (dap-python--template "Python :: Run pytest (at point)")))
 
 (defcustom dap-python-debugger 'ptvsd
   "Specify which debugger to use for `dap-python'.
-Can be either 'ptvsd or 'debugpy. Note that this setting can be
-overriden in individual `dap-python' launch configurations."
+Can be either `ptvsd' or `debugpy.' Note that this setting can be
+overridden in individual `dap-python' launch configuration. The
+values of this variable or the :debugger field may also be
+strings, for the sake of launch.json feature parity."
   :type '(choice (const 'ptvsd) (const 'debugpy))
   :group 'dap-python)
 
@@ -197,7 +177,7 @@ overriden in individual `dap-python' launch configurations."
          (debugger (plist-get conf :debugger)))
     (cl-remf conf :debugger)
     (pcase (or debugger dap-python-debugger)
-      ('ptvsd
+      ((or 'ptvsd "ptvsd")
        (let ((host "localhost")
              (debug-port (dap--find-available-port)))
          ;; support :args ["foo" "bar"]; NOTE: :args can be nil; however, nil is
@@ -217,7 +197,7 @@ overriden in individual `dap-python' launch configurations."
          (plist-put conf :port debug-port)
          (plist-put conf :hostName host)
          (plist-put conf :host host)))
-      ('debugpy
+      ((or 'debugpy "debugpy")
        ;; If certain properties are nil, issues will arise, as debugpy expects
        ;; them to unspecified instead. Some templates in this file set such
        ;; properties (e.g. :module) to nil instead of leaving them undefined. To
@@ -231,23 +211,36 @@ overriden in individual `dap-python' launch configurations."
              ;; :args "" -> :args nil -> {"args": null}; to handle that edge
              ;; case, use the empty vector instead.
              (plist-put conf :args []))))
-       (unless program
-         (cl-remf conf :target-module)
-         (cl-remf conf :program))
+       (cl-remf conf :target-module)
+       (cl-remf conf :program)
+       (when program
+         (plist-put conf :program program))
+
        (unless module
          (cl-remf conf :module))
        (unless (plist-get conf :cwd)
          (cl-remf conf :cwd))
 
        (plist-put conf :dap-server-path
-                  (list python-executable "-m" "debugpy.adapter"))))
-    (plist-put conf :program program)
+                  (list python-executable "-m" "debugpy.adapter")))
+      (_ (error "`dap-python': unknown :debugger type %S" debugger)))
     conf))
+
+(defun dap-python--normalize-args (args)
+  "Convert ARGS to a `list' of arguments.
+ARGS may be a string, a vector or a list."
+  (cl-typecase args
+    (string (split-string-and-unquote args))
+    (vector (cl-coerce args 'list))
+    (t args)))
 
 (defun dap-python--populate-test-at-point (conf)
   "Populate CONF with the required arguments."
-  (plist-put conf :target-module (concat (buffer-file-name)
-                                         (dap-python--test-at-point)))
+  (if-let ((test (dap-python--test-at-point)))
+      (let ((args (dap-python--normalize-args (plist-get conf :args))))
+        (cl-remf conf :args)
+        (plist-put conf :args (cons (concat (buffer-file-name) test) args)))
+    (user-error "`dap-python': no test at point"))
   (plist-put conf :cwd (lsp-workspace-root))
 
   (dap-python--populate-start-file-args conf))
@@ -273,11 +266,14 @@ overriden in individual `dap-python' launch configurations."
 
 (dap-register-debug-provider "python-test-at-point" 'dap-python--populate-test-at-point)
 (dap-register-debug-template "Python :: Run pytest (at point)"
-			                       (list :type "python-test-at-point"
-				                           :args ""
-				                           :module "pytest"
-				                           :request "launch"
-				                           :name "Python :: Run pytest (at point)"))
+                             (list :type "python-test-at-point"
+                                   :args ""
+                                   :module "pytest"
+                                   :request "launch"
+                                   :name "Python :: Run pytest (at point)"))
+
+(cl-defmethod dap-handle-event ((_event-type (eql debugpyWaitingForServer)) _session _params))
+(cl-defmethod dap-handle-event ((_event-type (eql debugpyAttach)) _session _params))
 
 (provide 'dap-python)
 ;;; dap-python.el ends here
