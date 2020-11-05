@@ -108,11 +108,11 @@ function MATCH and the `ws-response-header' convenience
 function.
 
   (ws-start
-   '(((lambda (_) t) .
-      (lambda (proc request)
-        (ws-response-header proc 200 '(\"Content-type\" . \"text/plain\"))
-        (process-send-string proc \"hello world\")
-        t)))
+   `(((lambda (_) t) .
+      (lambda (request)
+        (with-slots ((proc process)) request
+          (ws-response-header proc 200 '(\"Content-Type\" . \"text/plain\"))
+          (process-send-string proc \"hello world\")))))
    8080)
 
 "
@@ -363,8 +363,9 @@ Return non-nil only when parsing is complete."
 ;;                and causes `ws-web-socket-parse-messages' to be
 ;;                called again after it terminates
 ;; data --------- holds the data of parsed messages
-;; handler ------ holds the user-supplied function used called on the
-;;                data of parsed messages
+;; handler ------ holds the user-supplied function of two arguments
+;;                called on the process and the data of parsed
+;;                messages
 (defclass ws-message ()                 ; web socket message object
   ((process  :initarg :process  :accessor ws-process  :initform "")
    (pending  :initarg :pending  :accessor ws-pending  :initform "")
@@ -381,9 +382,9 @@ in the request handler.  If no web-socket connection is
 established (e.g., because REQUEST is not attempting to establish
 a connection) then no actions are taken and nil is returned.
 
-Second argument HANDLER should be a function of one argument
-which will be called on all complete messages as they are
-received and parsed from the network."
+Second argument HANDLER should be a function of two arguments,
+the process and a string, which will be called on all complete
+messages as they are received and parsed from the network."
   (with-slots (process headers) request
     (when (assoc :SEC-WEBSOCKET-KEY headers)
       ;; Accept the connection
