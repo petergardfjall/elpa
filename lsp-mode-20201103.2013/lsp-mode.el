@@ -354,7 +354,7 @@ unless overridden by a more specific face association."
          lsp-hack lsp-groovy lsp-haskell lsp-haxe lsp-java lsp-javascript lsp-json
          lsp-kotlin lsp-lua lsp-nim lsp-nix lsp-metals lsp-ocaml lsp-perl lsp-php lsp-pwsh
          lsp-pyls lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph
-         lsp-tex lsp-terraform lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
+         lsp-tex lsp-terraform lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
          lsp-yaml lsp-sqls lsp-svelte)
   "List of the clients to be automatically required."
   :group 'lsp-mode
@@ -889,7 +889,8 @@ Changes take effect only when a new session is started."
                                         (robot-mode . "robot")
                                         (racket-mode . "racket")
                                         (nix-mode . "nix")
-                                        (prolog-mode . "prolog"))
+                                        (prolog-mode . "prolog")
+                                        (vala-mode . "vala"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -2579,7 +2580,12 @@ an Elisp regexp."
 (define-minor-mode lsp-mode ""
   nil nil nil
   :keymap lsp-mode-map
-  :lighter (:eval (lsp-mode-line))
+  :lighter
+  '(" LSP["
+    (lsp--buffer-workspaces
+     (:eval (mapconcat #'lsp--workspace-print lsp--buffer-workspaces "]["))
+     (:propertize "Disconnected" face warning))
+    "]")
   :group 'lsp-mode)
 
 (defvar lsp-mode-menu
@@ -2623,13 +2629,6 @@ an Elisp regexp."
       :active (bound-and-true-p dap-ui-mode)
       :filter ,(lambda (_) (nthcdr 3 dap-ui-menu-items)))))
   "Menu for lsp-mode.")
-
-(defun lsp-mode-line ()
-  "Construct the mode line text."
-  (if-let ((workspaces (lsp-workspaces)))
-      (concat " LSP" (string-join (--map (format "[%s]" (lsp--workspace-print it))
-                                         workspaces)))
-    (concat " LSP" (propertize "[Disconnected]" 'face 'warning))))
 
 (defalias 'make-lsp-client 'make-lsp--client)
 
