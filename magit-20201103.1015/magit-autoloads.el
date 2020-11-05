@@ -1548,22 +1548,7 @@ Push a tag to another repository.
 Push a notes ref to another repository.
 
 \(fn REF REMOTE &optional ARGS)" t nil)
-
-(autoload 'magit-push-implicitly "magit-push" "\
-Push somewhere without using an explicit refspec.
-
-This command simply runs \"git push -v [ARGS]\".  ARGS are the
-arguments specified in the popup buffer.  No explicit refspec
-arguments are used.  Instead the behavior depends on at least
-these Git variables: `push.default', `remote.pushDefault',
-`branch.<branch>.pushRemote', `branch.<branch>.remote',
-`branch.<branch>.merge', and `remote.<remote>.push'.
-
-The function `magit-push-implicitly--desc' attempts to predict
-what this command will do.  The value it returns is displayed in
-the popup buffer.
-
-\(fn ARGS)" t nil)
+ (autoload 'magit-push-implicitly "magit-push" nil t)
 
 (autoload 'magit-push-to-remote "magit-push" "\
 Push to REMOTE without using an explicit refspec.
@@ -2294,6 +2279,35 @@ See info node `(magit)Debugging Tools' for more information." t nil)
 
 ;;;### (autoloads nil "magit-wip" "magit-wip.el" (0 0 0 0))
 ;;; Generated autoloads from magit-wip.el
+
+(defvar magit-wip-mode nil "\
+Non-nil if Magit-Wip mode is enabled.
+See the `magit-wip-mode' command
+for a description of this minor mode.
+Setting this variable directly does not take effect;
+either customize it (see the info node `Easy Customization')
+or call the function `magit-wip-mode'.")
+
+(custom-autoload 'magit-wip-mode "magit-wip" nil)
+
+(autoload 'magit-wip-mode "magit-wip" "\
+Save uncommitted changes to work-in-progress refs.
+
+If called interactively, enable Magit-Wip mode if ARG is
+positive, and disable it if ARG is zero or negative.  If called
+from Lisp, also enable the mode if ARG is omitted or nil, and
+toggle it if ARG is `toggle'; disable the mode otherwise.
+
+Whenever appropriate (i.e. when dataloss would be a possibility
+otherwise) this mode causes uncommitted changes to be committed
+to dedicated work-in-progress refs.
+
+For historic reasons this mode is implemented on top of four
+other `magit-wip-*' modes, which can also be used individually,
+if you want finer control over when the wip refs are updated;
+but that is discouraged.
+
+\(fn &optional ARG)" t nil)
 
 (put 'magit-wip-after-save-mode 'globalized-minor-mode t)
 
