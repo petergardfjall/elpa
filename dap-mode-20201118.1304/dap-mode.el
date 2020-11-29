@@ -692,45 +692,34 @@ thread exection but the server will log message."
                      session)
   (dap--resume-application session))
 
-(defun dap-next ()
-  "Debug next."
-  (interactive)
-  (let ((debug-session (dap--cur-active-session-or-die)))
-    (if-let (thread-id (dap--debug-session-thread-id (dap--cur-session)))
-        (progn
-          (dap--send-message (dap--make-request
-                              "next"
-                              (list :threadId thread-id))
-                             (dap--resp-handler)
-                             debug-session)
-          (dap--resume-application debug-session))
-      (lsp--error "Currently active thread is not stopped. Use `dap-switch-thread' or select stopped thread from sessions view."))))
-
-(defun dap-step-in ()
-  "Debug step in."
-  (interactive)
-  (if-let (thread-id (dap--debug-session-thread-id (dap--cur-session)))
+(defun dap--step (cmd debug-session)
+  "Send a request for CMD, a step command.
+DEBUG-SESSION is the debug session in which the stepping is to be
+executed."
+  (if-let (thread-id (dap--debug-session-thread-id debug-session))
       (progn
         (dap--send-message (dap--make-request
-                            "stepIn"
+                            cmd
                             (list :threadId thread-id))
                            (dap--resp-handler)
-                           (dap--cur-active-session-or-die))
-        (dap--resume-application (dap--cur-active-session-or-die)))
+                           debug-session)
+        (dap--resume-application debug-session))
     (lsp--error "Currently active thread is not stopped. Use `dap-switch-thread' or select stopped thread from sessions view.")))
 
-(defun dap-step-out ()
-  "Debug step in."
-  (interactive)
-  (if-let (thread-id (dap--debug-session-thread-id (dap--cur-session)))
-      (progn
-        (dap--send-message (dap--make-request
-                            "stepOut"
-                            (list :threadId thread-id))
-                           (dap--resp-handler)
-                           (dap--cur-active-session-or-die))
-        (dap--resume-application (dap--cur-active-session-or-die)))
-    (lsp--error "Currently active thread is not stopped. Use `dap-switch-thread' or select stopped thread from sessions view.")))
+(defun dap-next (debug-session)
+  "Step over statements."
+  (interactive (list (dap--cur-session-or-die)))
+  (dap--step "next" debug-session))
+
+(defun dap-step-in (debug-session)
+  "Like `dap-next', but step into function calls."
+  (interactive (list (dap--cur-session-or-die)))
+  (dap--step "stepIn" debug-session))
+
+(defun dap-step-out (debug-session)
+  "Debug step out."
+  (interactive (list (dap--cur-session-or-die)))
+  (dap--step "stepOut" debug-session))
 
 (defun dap-restart-frame (debug-session frame-id)
   "Restarts current frame."
@@ -1504,10 +1493,19 @@ arguments which contain the debug port to use for opening TCP connection."
 (defun dap-register-debug-template (configuration-name configuration-settings)
   "Register configuration template CONFIGURATION-NAME.
 
-CONFIGURATION-SETTINGS - plist containing the preset settings for the configuration."
+CONFIGURATION-SETTINGS is a plist containing the preset settings
+for the configuration. If its :name is omitted, it defaults to
+CONFIGURATION-NAME."
   (setq dap-debug-template-configurations
         (delq (assoc configuration-name dap-debug-template-configurations)
               dap-debug-template-configurations))
+  ;; Use `plist-member' instead of just `plist-get', because :name would
+  ;; possibly not be properly removed in `dap-start-debugging-noexpand' due to
+  ;; being specified twice (the inferred name, followed by nil).
+  (unless (plist-member configuration-settings :name)
+    ;; We mustn't modify CONFIGURATION-SETTINGS; `push' is non-destructive.
+    (push configuration-name configuration-settings)
+    (push :name configuration-settings))
   (add-to-list
    'dap-debug-template-configurations
    (cons configuration-name configuration-settings)))
@@ -1593,8 +1591,11 @@ before starting the debug process."
                    :startup-function :environment-variables :hostName host) launch-args)
           (session-name (dap--calculate-unique-name name (dap--get-sessions)))
           (default-directory (or cwd default-directory))
+          (process-environment (if environment-variables
+                                   (cl-copy-list process-environment)
+                                 process-environment))
           program-process)
-    (mapc (-lambda ((env . value)) (setenv env value)) environment-variables)
+    (mapc (-lambda ((env . value)) (setenv env value t)) environment-variables)
     (plist-put launch-args :name session-name)
 
     (when program-to-start
