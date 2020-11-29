@@ -265,10 +265,11 @@ source.fixAll code action."
    (lambda () (lsp-eslint-server-command))
    (lambda () (lsp-eslint-server-exists? (lsp-eslint-server-command))))
   :activation-fn (lambda (filename &optional _)
-                   (or (string-match-p (rx (one-or-more anything) "."
-                                           (or "ts" "js" "jsx" "tsx" "html" "vue"))
-                                       filename)
-                       (derived-mode-p 'js-mode 'js2-mode 'typescript-mode 'html-mode)))
+                   (when lsp-eslint-enable
+                     (or (string-match-p (rx (one-or-more anything) "."
+                                             (or "ts" "js" "jsx" "tsx" "html" "vue")eos)
+                                         filename)
+                         (derived-mode-p 'js-mode 'js2-mode 'typescript-mode 'html-mode))))
   :priority -1
   :completion-in-comments? t
   :add-on? t
@@ -303,7 +304,7 @@ source.fixAll code action."
                                    (funcall callback))
                                (error (funcall error-callback err))))
                            error-callback
-                           :url (lsp-vscode-extension-url "dbaeumer" "vscode-eslint")
+                           :url (lsp-vscode-extension-url "dbaeumer" "vscode-eslint" "2.1.8")
                            :store-path tmp-zip)))))
 
 (provide 'lsp-eslint)

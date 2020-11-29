@@ -470,6 +470,13 @@ mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-sorbet" "lsp-sorbet.el" (0 0 0 0))
+;;; Generated autoloads from lsp-sorbet.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-sorbet" '("lsp-sorbet-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-sqls" "lsp-sqls.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-sqls.el
 

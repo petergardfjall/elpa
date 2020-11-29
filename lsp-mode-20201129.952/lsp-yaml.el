@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'lsp-mode)
+(require 'dash)
 
 (defgroup lsp-yaml nil
   "LSP support for YAML, using yaml-language-server."
@@ -88,7 +89,7 @@
 
 (defcustom lsp-yaml-schemas '()
   "Associate schemas to YAML files in a glob pattern."
-  :type '(alist :key-type (string :tag "schema") :value-type (string :tag "files (glob)"))
+  :type '(alist :key-type (symbol :tag "schema") :value-type (vector :tag "files (glob)"))
   :group 'lsp-yaml
   :package-version '(lsp-mode . "6.2"))
 
@@ -164,43 +165,48 @@
 (defconst lsp-yaml--built-in-kubernetes-schema
   '((name . "Kubernetes")
     (description . "Built-in kubernetes manifest schema definition")
-    (url . :kubernetes)
+    (url . "kubernetes")
     (fileMatch . ["*-k8s.yaml" "*-k8s.yml"])))
 
 (defun lsp-yaml-download-schema-store-db (&optional force-downloading)
   "Download the remote schema store at `lsp-yaml-schema-store-uri' into local cache.
 Set FORCE-DOWNLOADING to non-nil to force re-download the database."
   (interactive "P")
-  (or force-downloading
-      (file-exists-p lsp-yaml-schema-store-local-db)
-      (url-copy-file lsp-yaml-schema-store-uri lsp-yaml-schema-store-local-db)))
+  (when (or force-downloading (not (file-exists-p lsp-yaml-schema-store-local-db)))
+    (unless (file-directory-p (file-name-directory lsp-yaml-schema-store-local-db))
+      (mkdir (file-name-directory lsp-yaml-schema-store-local-db)))
+    (url-copy-file lsp-yaml-schema-store-uri lsp-yaml-schema-store-local-db force-downloading)))
 
 (defun lsp-yaml--get-supported-schemas ()
   "Get out the list of supported schemas."
   (when (and lsp-yaml-schema-store-enable
              (not lsp-yaml--schema-store-schemas-alist))
-    (progn
-      (lsp-yaml-download-schema-store-db)
-      (setq lsp-yaml--schema-store-schemas-alist
-            (alist-get 'schemas (json-read-file lsp-yaml-schema-store-local-db)))))
+    (lsp-yaml-download-schema-store-db)
+    (setq lsp-yaml--schema-store-schemas-alist
+          (alist-get 'schemas (json-read-file lsp-yaml-schema-store-local-db))))
   (seq-concatenate 'list (list lsp-yaml--built-in-kubernetes-schema) lsp-yaml--schema-store-schemas-alist))
 
-(defun lsp-yaml-set-buffer-schema (uri)
-  "Set yaml schema for the current buffer to URI."
+(defun lsp-yaml-set-buffer-schema (uri-string)
+  "Set yaml schema for the current buffer to URI-STRING."
   (interactive "MURI: ")
-  (let* ((workspace-path (file-relative-name
+  (let* ((uri (intern uri-string))
+         (workspace-path (file-relative-name
                           (lsp--uri-to-path (lsp--buffer-uri))
                           (lsp-workspace-root (lsp--buffer-uri))))
-         (glob-pattern (concat "/" workspace-path))
-         (current-config (cl-assoc uri lsp-yaml-schemas :test 'equal))
+         (glob (concat "/" workspace-path))
+         (current-config (assoc uri lsp-yaml-schemas))
          (current-patterns (and current-config (cdr current-config))))
     (if current-config
-        (or (cl-member glob-pattern current-patterns :test 'equal)
+        (or (member glob (append current-patterns nil))
             (setq lsp-yaml-schemas
-                  (cl-acons uri (cl-list* glob-pattern current-patterns)
-                            (cl-remove current-config lsp-yaml-schemas))))
+                  (cl-acons uri
+                            (vconcat (vector glob) current-patterns)
+                            (assq-delete-all uri
+                                             (mapcar (lambda (x) (lsp-yaml--remove-glob x glob))
+                                                     lsp-yaml-schemas)))))
       (setq lsp-yaml-schemas
-            (cl-acons uri (cl-list* glob-pattern nil) lsp-yaml-schemas)))
+            (cl-acons uri (vector glob) (mapcar (lambda (x) (lsp-yaml--remove-glob x glob))
+                                                lsp-yaml-schemas))))
     (lsp--set-configuration (lsp-configuration-section "yaml"))))
 
 (defun lsp-yaml-select-buffer-schema ()
@@ -213,6 +219,12 @@ Set FORCE-DOWNLOADING to non-nil to force re-download the database."
                                        nil t))
          (uri (alist-get 'url schema)))
     (lsp-yaml-set-buffer-schema uri)))
+
+(defun lsp-yaml--remove-glob (mapping glob)
+  (let ((patterns (cdr mapping)))
+    (cons (car mapping)
+          (vconcat (-filter (lambda (p) (not (equal p glob)))
+                            (append patterns nil)) nil))))
 
 (provide 'lsp-yaml)
 ;;; lsp-yaml.el ends here

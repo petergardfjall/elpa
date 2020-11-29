@@ -353,7 +353,7 @@ unless overridden by a more specific face association."
          lsp-elixir lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go
          lsp-hack lsp-groovy lsp-haskell lsp-haxe lsp-java lsp-javascript lsp-json
          lsp-kotlin lsp-lua lsp-nim lsp-nix lsp-metals lsp-ocaml lsp-perl lsp-php lsp-pwsh
-         lsp-pyls lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph
+         lsp-pyls lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet
          lsp-tex lsp-terraform lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
          lsp-yaml lsp-sqls lsp-svelte)
   "List of the clients to be automatically required."
@@ -505,7 +505,10 @@ the server has requested that."
                                     "[/\\\\]\\.deps\\'"
                                     "[/\\\\]build-aux\\'"
                                     "[/\\\\]autom4te.cache\\'"
-                                    "[/\\\\]\\.reference\\'")
+                                    "[/\\\\]\\.reference\\'"
+                                    ;; .Net Core build-output
+                                    "[/\\\\]bin/Debug\\'"
+                                    "[/\\\\]obj\\'")
   "List of regexps matching directory paths which won't be monitored when creating file watches."
   :group 'lsp-mode
   :type '(repeat string)
@@ -782,7 +785,7 @@ returns a negative number, 0, or a positive number indicating
 whether the first parameter is less than, equal to, or greater
 than the second parameter.")
 
-(defcustom lsp-diagnostic-clean-after-change t
+(defcustom lsp-diagnostic-clean-after-change nil
   "When non-nil, clean the diagnostics on change.
 
 Note that when that setting is nil, `lsp-mode' will show stale
@@ -2581,11 +2584,11 @@ an Elisp regexp."
   nil nil nil
   :keymap lsp-mode-map
   :lighter
-  '(" LSP["
-    (lsp--buffer-workspaces
-     (:eval (mapconcat #'lsp--workspace-print lsp--buffer-workspaces "]["))
-     (:propertize "Disconnected" face warning))
-    "]")
+  (" LSP["
+   (lsp--buffer-workspaces
+    (:eval (mapconcat #'lsp--workspace-print lsp--buffer-workspaces "]["))
+    (:propertize "Disconnected" face warning))
+   "]")
   :group 'lsp-mode)
 
 (defvar lsp-mode-menu
@@ -3649,38 +3652,44 @@ in that particular folder."
 
 (defun lsp-configure-buffer ()
   "Configure LSP features for current buffer."
-  (when lsp-auto-configure
-    (when (and lsp-enable-text-document-color
-               (lsp-feature? "textDocument/documentColor"))
-      (add-hook 'lsp-on-change-hook #'lsp--document-color nil t))
+  ;; make sure the core is running in the context of all available workspaces
+  ;; to avoid misconfiguration in case we are running in `with-lsp-workspace' context
+  (let ((lsp--buffer-workspaces (cond
+                                 (lsp--buffer-workspaces)
+                                 (lsp--cur-workspace (list lsp--cur-workspace))))
+        lsp--cur-workspace)
+    (when lsp-auto-configure
+      (when (and lsp-enable-text-document-color
+                 (lsp-feature? "textDocument/documentColor"))
+        (add-hook 'lsp-on-change-hook #'lsp--document-color nil t))
 
-    (when (and lsp-enable-imenu
-               (lsp-feature? "textDocument/documentSymbol"))
-      (lsp-enable-imenu))
+      (when (and lsp-enable-imenu
+                 (lsp-feature? "textDocument/documentSymbol"))
+        (lsp-enable-imenu))
 
-    (when (and lsp-enable-indentation
-               (lsp-feature? "textDocument/rangeFormatting"))
-      (setq-local indent-region-function #'lsp-format-region))
+      (when (and lsp-enable-indentation
+                 (lsp-feature? "textDocument/rangeFormatting"))
+        (setq-local indent-region-function #'lsp-format-region))
 
-    (when (and lsp-enable-symbol-highlighting
-               (lsp-feature? "textDocument/documentHighlight"))
-      (add-hook 'lsp-on-idle-hook #'lsp--document-highlight nil t))
+      (when (and lsp-enable-symbol-highlighting
+                 (lsp-feature? "textDocument/documentHighlight"))
+        (add-hook 'lsp-on-idle-hook #'lsp--document-highlight nil t))
 
-    (when (and lsp-enable-links
-               (lsp-feature? "textDocument/documentLink"))
-      (add-hook 'lsp-on-idle-hook #'lsp--document-links nil t))
+      (when (and lsp-enable-links
+                 (lsp-feature? "textDocument/documentLink"))
+        (add-hook 'lsp-on-idle-hook #'lsp--document-links nil t))
 
-    (when (and lsp-enable-dap-auto-configure
-               (functionp 'dap-mode))
-      (dap-auto-configure-mode 1))
+      (when (and lsp-enable-dap-auto-configure
+                 (functionp 'dap-mode))
+        (dap-auto-configure-mode 1))
 
-    (when (and lsp-enable-semantic-highlighting
-               (lsp-feature? "textDocument/semanticTokens"))
-      (mapc #'lsp--semantic-tokens-initialize-workspace
-            (lsp--find-workspaces-for "textDocument/semanticTokens"))
-      (lsp--semantic-tokens-initialize-buffer
-       (lsp-feature? "textDocument/semanticTokensRangeProvider"))))
-  (run-hooks 'lsp-configure-hook))
+      (when (and lsp-enable-semantic-highlighting
+                 (lsp-feature? "textDocument/semanticTokens"))
+        (mapc #'lsp--semantic-tokens-initialize-workspace
+              (lsp--find-workspaces-for "textDocument/semanticTokens"))
+        (lsp--semantic-tokens-initialize-buffer
+         (lsp-feature? "textDocument/semanticTokensRangeProvider"))))
+    (run-hooks 'lsp-configure-hook)))
 
 (defun lsp-unconfig-buffer ()
   "Unconfigure LSP features for buffer."
@@ -4301,20 +4310,16 @@ Applies on type formatting."
   (let ((ch last-command-event))
     (when (or (eq (string-to-char first-trigger-characters) ch)
               (cl-find ch more-trigger-characters :key #'string-to-char))
-      (-let [(callback cleanup-fn) (lsp--create-apply-text-edits-handlers)]
-        (lsp-request-async "textDocument/onTypeFormatting"
-                           (lsp-merge (lsp-make-document-on-type-formatting-params
-                                       :ch (char-to-string ch)
-                                       :position (lsp--cur-position))
-                                      (lsp--make-document-formatting-params))
-                           (lambda (text-edits)
-                             (funcall callback text-edits)
-                             (funcall cleanup-fn))
-                           :error-handler (lambda (err)
-                                            (funcall cleanup-fn)
-                                            (error (lsp:json-error-message err)))
-                           :cancel-handler cleanup-fn
-                           :mode 'tick)))))
+      (lsp-request-async "textDocument/onTypeFormatting"
+                         (lsp-make-document-on-type-formatting-params
+                          :text-document (lsp--text-document-identifier)
+                          :options (lsp-make-formatting-options
+                                    :tab-size (symbol-value (lsp--get-indent-width major-mode))
+                                    :insert-spaces (if indent-tabs-mode :json-false t))
+                          :ch (char-to-string ch)
+                          :position (lsp--cur-position))
+                         #'lsp--apply-text-edits
+                         :mode 'tick))))
 
 
 ;; links
@@ -4909,7 +4914,7 @@ RENDER-ALL - nil if only the signature should be rendered."
       (progn
         (setq lsp--signature-last-buffer (current-buffer))
         (let ((lv-force-update t))
-          (lv-message message)))
+          (lv-message "%s" message)))
     (lv-delete-window)))
 
 (defun lsp--handle-signature-update (signature)
@@ -5297,8 +5302,8 @@ A reference is highlighted only if it is visible in a window."
   (lsp--remove-overlays 'lsp-highlight)
 
   (let* ((wins-visible-pos (-map (lambda (win)
-                                   (cons (1- (line-number-at-pos (window-start win)))
-                                         (1+ (line-number-at-pos (window-end win)))))
+                                   (cons (1- (line-number-at-pos (window-start win) t))
+                                         (1+ (line-number-at-pos (window-end win) t))))
                                  (get-buffer-window-list nil nil 'visible))))
     (setq lsp--have-document-highlights t)
     (-map
@@ -5648,30 +5653,87 @@ perform the request synchronously."
   (seq-map #'lsp--symbol-information-to-xref
            (lsp-request "workspace/symbol" `(:query ,pattern))))
 
+(defcustom lsp-rename-use-prepare t
+  "Whether `lsp-rename' should do a prepareRename first.
+For some language servers, textDocument/prepareRename might be
+too slow, in which case this variable may be set to nil.
+`lsp-rename' will then use `thing-at-point' `symbol' to determine
+the symbol to rename at point."
+  :group 'lsp-mode
+  :type 'boolean)
+
 (defun lsp--get-symbol-to-rename ()
-  "Get symbol to rename and placeholder at point."
-  (if (let ((rename-provider (or (lsp--capability :renameProvider)
-                                 (-some-> (lsp--registered-capability "textDocument/rename")
-                                   (lsp--registered-capability-options)))))
-        (lsp:rename-options-prepare-provider? rename-provider))
-      (-when-let (response (lsp-request "textDocument/prepareRename"
-                                        (lsp--text-document-position-params)))
-        (-let* (((start . end) (lsp--range-to-region
-                                (if (lsp-range? response)
-                                    response
-                                  (lsp:prepare-rename-result-range response))))
-                (symbol (buffer-substring-no-properties start end))
-                (placeholder (lsp:prepare-rename-result-placeholder response)))
-          (cons symbol (or placeholder symbol))))
-    (let ((symbol (thing-at-point 'symbol t)))
-      (cons symbol symbol))))
+  "Get a symbol to rename and placeholder at point.
+Returns a cons ((START . END) . PLACEHOLDER?), and nil if
+renaming is generally supported but cannot be done at point.
+START and END are the bounds of the identifiers being renamed,
+while PLACEHOLDER?, is either nil or a string suggested by the
+language server as the initial input of a new-name prompt."
+  (unless (lsp-feature? "textDocument/rename")
+    (error "The connected server(s) doesn't support renaming"))
+  (if (and lsp-rename-use-prepare (lsp-feature? "textDocument/prepareRename"))
+      (when-let ((response
+                  (lsp-request "textDocument/prepareRename"
+                               (lsp--text-document-position-params))))
+        (let* ((bounds (lsp--range-to-region
+                        (if (lsp-range? response)
+                            response
+                          (lsp:prepare-rename-result-range response))))
+               (placeholder
+                (and (not (lsp-range? response))
+                     (lsp:prepare-rename-result-placeholder response))))
+          (cons bounds placeholder)))
+    (when-let ((bounds (bounds-of-thing-at-point 'symbol)))
+      (cons bounds nil))))
+
+(defface lsp-face-rename '((t :underline t))
+  "Face used to highlight the identifier being renamed.
+Renaming can be done using `lsp-rename'."
+  :group 'lsp-faces)
+
+(defface lsp-rename-placeholder-face '((t :inherit font-lock-variable-name-face))
+  "Face used to display the rename placeholder in.
+When calling `lsp-rename' interactively, this will be the face of
+the new name."
+  :group 'lsp-faces)
+
+(defvar lsp-rename-history '()
+  "History for `lsp--read-rename'.")
+
+(defun lsp--read-rename (at-point)
+  "Read a new name for a `lsp-rename' at `point' from the user.
+AT-POINT shall be a structure as returned by
+`lsp--get-symbol-to-rename'.
+
+Returns a string, which should be the new name for the identifier
+at point. If renaming cannot be done at point (as determined from
+AT-POINT), throw a `user-error'.
+
+This function is for use in `lsp-rename' only, and shall not be
+relied upon."
+  (unless at-point
+    (user-error "`lsp-rename' is invalid here"))
+  (-let* ((((start . end) . placeholder?) at-point)
+          ;; Do the `buffer-substring' first to not include `lsp-face-rename'
+          (rename-me (buffer-substring start end))
+          (placeholder (or placeholder? rename-me))
+          (placeholder (propertize placeholder 'face 'lsp-rename-placeholder-face))
+
+          overlay)
+    ;; We need unwind protect, as the user might cancel here, causing the
+    ;; overlay to linger.
+    (unwind-protect
+        (progn
+          (setq overlay (make-overlay start end))
+          (overlay-put overlay 'face 'lsp-face-rename)
+
+          (read-string (format "Rename %s to: " rename-me) placeholder
+                       'lsp-rename-history))
+      (and overlay (delete-overlay overlay)))))
 
 (defun lsp-rename (newname)
   "Rename the symbol (and all references to it) under point to NEWNAME."
-  (interactive (list (-when-let ((symbol . placeholder) (lsp--get-symbol-to-rename))
-                       (read-string (format "Rename %s to: " symbol) placeholder nil symbol))))
-  (unless newname
-    (user-error "A rename is not valid at this position"))
+  (interactive (list (lsp--read-rename (lsp--get-symbol-to-rename))))
   (when-let ((edits (lsp-request "textDocument/rename"
                                  `( :textDocument ,(lsp--text-document-identifier)
                                     :position ,(lsp--cur-position)
@@ -6182,7 +6244,48 @@ deserialization.")
 (defvar-local lsp--line-col-to-point-hash-table nil
   "Hash table with keys (line . col) and values that are either point positions or markers.")
 
-(lsp-defun lsp--symbol-to-imenu-elem ((sym &as &SymbolInformation :name :container-name?))
+(defcustom lsp-imenu-detailed-outline t
+  "Whether `lsp-imenu' should include signatures.
+This will be ignored if the server doesn't provide the necessary
+information, for example if it doesn't support DocumentSymbols."
+  :group 'lsp-imenu
+  :type 'boolean)
+
+(defface lsp-details-face '((t :height 0.8 :inherit shadow))
+  "Used to display additional information troughout `lsp'.
+Things like line numbers, signatures, ... are considered
+additional information. Often, additional faces are defined that
+inherit from this face by default, like `lsp-signature-face', and
+they may be customized for finer control."
+  :group 'lsp-faces)
+
+(defface lsp-signature-face '((t :inherit lsp-details-face))
+  "Used to display signatures in `imenu', ...."
+  :group 'lsp-faces)
+
+(lsp-defun lsp-render-symbol ((&DocumentSymbol :name :detail? :deprecated?)
+                              show-detail?)
+  "Render INPUT0, an `&DocumentSymbol', to a string.
+If SHOW-DETAIL? is set, make use of its `:detail?' field (often
+the signature)."
+  (let ((detail (and show-detail? (s-present? detail?)
+                     (propertize (concat " " (s-trim-left detail?))
+                                 'face 'lsp-signature-face)))
+        (name (if deprecated?
+                  (propertize name 'face 'lsp-face-semhl-deprecated) name)))
+    (concat name detail)))
+
+(lsp-defun lsp-render-symbol-information ((&SymbolInformation :name :deprecated? :container-name?)
+                                          separator)
+  "Render a piece of SymbolInformation.
+Handle :deprecated?. If SEPARATOR is non-nil, the
+symbol's (optional) parent, SEPARATOR and the symbol itself are
+concatenated."
+  (when (and separator container-name? (not (string-empty-p container-name?)))
+    (setq name (concat name separator container-name?)))
+  (if deprecated? (propertize name 'face 'lsp-face-semhl-deprecated) name))
+
+(defun lsp--symbol-to-imenu-elem (sym)
   "Convert SYM to imenu element.
 
 SYM is a SymbolInformation message.
@@ -6190,12 +6293,12 @@ SYM is a SymbolInformation message.
 Return a cons cell (full-name . start-point)."
   (let ((start-point (ht-get lsp--line-col-to-point-hash-table
                              (lsp--get-line-and-col sym))))
-    (cons (if (and lsp-imenu-show-container-name container-name?)
-              (concat container-name? lsp-imenu-container-name-separator name)
-            name)
+    (cons (lsp-render-symbol-information
+           sym (and lsp-imenu-show-container-name
+                    lsp-imenu-container-name-separator))
           start-point)))
 
-(lsp-defun lsp--symbol-to-hierarchical-imenu-elem ((sym &as &DocumentSymbol :name :children?))
+(lsp-defun lsp--symbol-to-hierarchical-imenu-elem ((sym &as &DocumentSymbol :children?))
   "Convert SYM to hierarchical imenu elements.
 
 SYM is a DocumentSymbol message.
@@ -6206,12 +6309,13 @@ an alist
 
   (\"symbol-name\" . ((\"(symbol-kind)\" . start-point)
                     cons-cells-from-children))"
-  (let ((filtered-children (lsp--imenu-filter-symbols children?)))
+  (let ((filtered-children (lsp--imenu-filter-symbols children?))
+        (signature (lsp-render-symbol sym lsp-imenu-detailed-outline)))
     (if (seq-empty-p filtered-children)
-        (cons name
+        (cons signature
               (ht-get lsp--line-col-to-point-hash-table
                       (lsp--get-line-and-col sym)))
-      (cons name
+      (cons signature
             (lsp--imenu-create-hierarchical-index filtered-children)))))
 
 (lsp-defun lsp--symbol-ignore ((&SymbolInformation :kind :location))
@@ -7207,7 +7311,9 @@ changing the value of `foo'."
               tail (cdr (cdr tail))))))
     plist))
 
-(defvar lsp-client-settings nil)
+(defvar lsp-client-settings nil
+  "For internal use, any external users please use
+  `lsp-register-custom-settings' function instead")
 
 (defun lsp--compare-setting-path (a b)
   (equal (car a) (car b)))
@@ -7218,7 +7324,10 @@ PROPS is list of triple (path value boolean?) where PATH is the path to the
 property; VALUE can be a literal value, symbol to be evaluated, or either a
 function or lambda function to be called without arguments; BOOLEAN? is an
 optional flag that should be non-nil for boolean settings, when it is nil the
-property will be ignored if the VALUE is nil."
+property will be ignored if the VALUE is nil.
+
+Example: `(lsp-register-custom-settings '((\"foo.bar.buzz.enabled\" t t)))'
+(note the double parentheses)"
   (let ((-compare-fn #'lsp--compare-setting-path))
     (setq lsp-client-settings (-uniq (append props lsp-client-settings)))))
 
@@ -7749,7 +7858,7 @@ You may find the installation instructions at https://emacs-lsp.github.io/lsp-mo
        ((-> #'lsp--matching-clients? lsp--filter-clients not)
         (lsp--error "There are no language servers supporting current mode `%s' registered with `lsp-mode'.
 This issue might be caused by:
-1. You haven't registered/loaded external language server package which doesn't ship with `lsp-mode'(e. g. `lsp-java', `lsp-metals').
+1. The language you are trying to use does not have built-in support in `lsp-mode'. You must install the required support manually. Examples of this are `lsp-java' or `lsp-metals'.
 2. The language server that you expect to run is not configured to run for major mode `%s'. You may check that by checking the `:major-modes' that are passed to `lsp-register-client'.
 3. `lsp-mode' doesn't have any integration for the language behind `%s'. Refer to https://emacs-lsp.github.io/lsp-mode/page/languages and https://langserver.org/ ."
                     major-mode major-mode major-mode))))))
