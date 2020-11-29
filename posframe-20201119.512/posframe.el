@@ -5,9 +5,9 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Package-Version: 20201026.716
-;; Package-Commit: 395aca928b00c8f76aaeb65a85481c99e88c6873
-;; Version: 0.8.2
+;; Package-Version: 20201119.512
+;; Package-Commit: 9e9b16b0b27d1ca1973773db9bcdfada9475f34a
+;; Version: 0.8.3
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
 
@@ -219,7 +219,7 @@ frame.")
   (when (and
          (> emacs-major-version 26)
          (string-match-p "GTK3" system-configuration-features)
-         (let ((value (getenv "XDG_CURRENT_DESKTOP")))
+         (let ((value (or (getenv "XDG_CURRENT_DESKTOP") (getenv "DESKTOP_SESSION"))))
            (and (stringp value)
                 ;; It can be "ubuntu:GNOME".
                 (string-match-p "GNOME" value))))
@@ -687,7 +687,9 @@ posframe from catching keyboard input if the window manager selects it."
              (frame-parameter (selected-frame) 'no-accept-focus))
     (redirect-frame-focus posframe--frame (frame-parent))))
 
-(add-hook 'focus-in-hook #'posframe--redirect-posframe-focus)
+(if (version< emacs-version "27.1")
+    (add-hook 'focus-in-hook #'posframe--redirect-posframe-focus)
+  (add-function :after after-focus-change-function #'posframe--redirect-posframe-focus))
 
 (defun posframe--mouse-banish (parent-frame &optional posframe)
   "Banish mouse to the (0 . 0) of PARENT-FRAME.
@@ -1087,7 +1089,8 @@ bottom center.  The structure of INFO can be found in docstring of
   (cons (/ (- (plist-get info :parent-frame-width)
               (plist-get info :posframe-width))
            2)
-        (- 0
+        (- (plist-get info :parent-frame-height)
+           (plist-get info :posframe-height)
            (plist-get info :mode-line-height)
            (plist-get info :minibuffer-height))))
 
