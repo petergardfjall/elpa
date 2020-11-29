@@ -485,7 +485,9 @@ Note that this does *not* take `scroll-margin' into account."
        2)))
   "The value for `imenu-generic-expression' treemacs uses in elisp buffers.
 More discriminating than the default as it distinguishes between functions,
-inline functions, macros, faces, variables, customisations and types."
+inline functions, macros, faces, variables, customisations and types.
+
+Can be set to nil to use the default value."
   :type 'alist
   :group 'treemacs)
 
@@ -840,10 +842,16 @@ The hooks will be run *after* the treemacs buffer was destroyed."
   :type 'hook
   :group 'treemacs-hooks)
 
-(defcustom treemacs-select-hook nil
+(define-obsolete-variable-alias 'treemacs-select-hook 'treemacs-select-functions)
+
+(defcustom treemacs-select-functions nil
   "Hooks to run when the treemacs window is selected.
-This only applies to commands like `treemacs' or `treemacs-select-window', not
-general window selection commands like `other-window'."
+The hook should accept one argument which is a symbol describing treemacs'
+visibility before the select was invoked, as it would have been returned by
+`treemacs-current-visibility'.
+
+This hook only applies to commands like `treemacs' or `treemacs-select-window',
+not general window selection commands like `other-window'."
   :type 'hook
   :group 'treemacs-hooks)
 

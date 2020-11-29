@@ -148,6 +148,7 @@ PATH: String"
                         treemacs--workspaces)
                (car treemacs--workspaces))))))
 
+;; TODO(2020/11/25): NAME
 (define-inline treemacs--find-project-for-buffer (&optional buffer-file)
   "In the current workspace find the project current buffer's file falls under.
 Optionally supply the BUFFER-FILE in case it is not available by calling
@@ -315,16 +316,21 @@ Return values may be as follows:
        (run-hook-with-args 'treemacs-create-workspace-functions workspace)
        `(success ,workspace)))))
 
-(defun treemacs-do-remove-workspace (&optional ask-to-confirm)
-  "Delete a workspace.
+(defun treemacs-do-remove-workspace (&optional workspace ask-to-confirm)
+  "Delete a WORKSPACE.
 Ask the user to confirm the deletion when ASK-TO-CONFIRM is t (it will be when
 this is called from `treemacs-remove-workspace').
+
+If no WORKSPACE name is given it will be selected interactively.
+
 Return values may be as follows:
 
 * If only a single workspace remains:
   - the symbol `only-one-workspace'
 * If the user cancel the deletion:
   - the symbol `user-cancel'
+* If the workspace cannot be found:
+  - the symbol `workspace-not-found'
 * If everything went well:
   - the symbol `success'
   - the deleted workspace
@@ -332,22 +338,24 @@ Return values may be as follows:
   (treemacs-block
    (treemacs-return-if (= 1 (length treemacs--workspaces))
      'only-one-workspace)
-   (let* ((names->workspaces (--map (cons (treemacs-workspace->name it) it) treemacs--workspaces))
-          (name (completing-read "Delete: " names->workspaces nil t))
-          (to-delete (cdr (assoc name names->workspaces))))
-     (when (and ask-to-confirm
-                (not (yes-or-no-p (format "Delete workspace %s and all its projects?"
-                                          (propertize (treemacs-workspace->name to-delete)
-                                                      'face 'font-lock-type-face)))))
-       (treemacs-return 'user-cancel))
+   (let* ((name (or workspace
+                    (completing-read "Delete: " (-map #'treemacs-workspace->name treemacs--workspaces) nil t)))
+          (to-delete (treemacs-find-workspace-by-name name)))
+     (treemacs-return-if
+         (and ask-to-confirm
+              (not (yes-or-no-p (format "Delete workspace %s and all its projects?"
+                                        (propertize (treemacs-workspace->name to-delete)
+                                                    'face 'font-lock-type-face)))))
+       'user-cancel)
+     (treemacs-return-if (null to-delete)
+       `(workspace-not-found ,name))
      (setq treemacs--workspaces (delete to-delete treemacs--workspaces))
      (treemacs--persist)
      (treemacs--invalidate-buffer-project-cache)
-     (dolist (frame (frame-list))
-       (with-selected-frame frame
-         (-when-let (current-ws (treemacs-current-workspace))
-           (when (eq current-ws to-delete)
-             (treemacs--rerender-after-workspace-change)))))
+     (treemacs-run-in-every-buffer
+      (let ((current-ws (treemacs-current-workspace)))
+        (when (eq current-ws to-delete)
+          (treemacs--rerender-after-workspace-change))))
      (run-hook-with-args 'treemacs-delete-workspace-functions to-delete)
      `(success ,to-delete ,treemacs--workspaces))))
 
@@ -778,6 +786,26 @@ alive."
                     (eq buffer messages)
                     (funcall no-delete-test buffer))
           (kill-buffer buffer))))))
+
+(defun treemacs-find-workspace-by-name (name)
+  "Find a workspace with the given NAME.
+The check is case-sensitive.  nil is returned when no workspace is found."
+  (declare (side-effect-free t))
+  (--first (string= name (treemacs-workspace->name it))
+           treemacs--workspaces))
+
+(defun treemacs-find-workspace-by-path (path)
+  "Find a workspace with a project containing the given PATH.
+nil is returned when no workspace is found."
+  (declare (side-effect-free t))
+  (--first (treemacs-is-path path :in-workspace it)
+           treemacs--workspaces))
+
+(defun treemacs-find-workspace-where (predicate)
+  "Find a workspace matching the given PREDICATE.
+Predicate should be a function that takes a `treemacs-workspace' as its single
+argument.  nil is returned when no workspace is found."
+  (--first (funcall predicate it) treemacs--workspaces))
 
 (provide 'treemacs-workspaces)
 
