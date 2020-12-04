@@ -5,7 +5,7 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.6.0
+;; Version: 0.6.2
 ;; Package-Requires: ((emacs "25"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -65,8 +65,8 @@ using the https://material.io/resources/color/ tool."
   `(("background-primary"    . ,(if (eq variant 'dark) "#012027" "#fdfdfa"))
     ("background-off"        . ,(if (eq variant 'dark) "#001b21" "#fbfbf8"))
     ("background-on"         . ,(if (eq variant 'dark) "#01343f" "#f5f5e7"))
-    ("foreground-primary"    . ,(if (eq variant 'dark) "#dddddd" "#24292e"))
-    ("foreground-secondary"  . ,(if (eq variant 'dark) "#c8c8c8" "#505055"))
+    ("foreground-primary"    . ,(if (eq variant 'dark) "#dddddd" "#333333"))
+    ("foreground-secondary"  . ,(if (eq variant 'dark) "#c8c8c8" "#606060"))
     ("foreground-tertiary"   . ,(if (eq variant 'dark) "#b0b0b0" "#8e8e8e"))
     ("primary"               . ,(if (eq variant 'dark) "#9fa8da" "#7e57c2"))
     ("primary-light"         . ,(if (eq variant 'dark) "#d1d9ff" "#b085f5"))
@@ -79,8 +79,8 @@ using the https://material.io/resources/color/ tool."
     ("tertiary-dark"         . ,(if (eq variant 'dark) "#5d99c6" "#003c8f"))
 
     ("error"                 . ,(if (eq variant 'dark) "#ff5555" "#b0003a"))
-    ("warning"               . ,(if (eq variant 'dark) "#ff9800" "#e65100"))
-    ("discrete"              . ,(if (eq variant 'dark) "#777777" "#888888"))
+    ("warning"               . ,(if (eq variant 'dark) "#ff9800" "#ff9800"))
+    ("discrete"              . ,(if (eq variant 'dark) "#777777" "#999999"))
     ("vertical-border"       . ,(if (eq variant 'dark) "#012830" "#dddddd"))
     ("cursor"                . ,(if (eq variant 'dark) "#64d8cb" "#64d8cb"))
     ("modeline-active-fg"    . ,(if (eq variant 'dark) "#ffffff" "#ffffff"))
@@ -151,10 +151,10 @@ NAME and VARIANT should be symbols."
 	  (discrete             (immaterial-color "discrete"))
 
 	  (keyword              (immaterial-color "primary"))
-	  (builtin              (immaterial-color "primary-light"))
-	  (const                (immaterial-color "primary-dark"))
+	  (builtin              (immaterial-color "primary"))
+	  (const                (immaterial-color "primary"))
 	  (type                 (immaterial-color "secondary"))
-	  (var                  (immaterial-color "secondary-dark"))
+	  (var                  (immaterial-color "foreground-primary"))
 	  (func                 (immaterial-color "secondary-dark"))
 	  (str                  (immaterial-color "tertiary"))
 	  (comment              (immaterial-color "discrete"))
@@ -201,11 +201,11 @@ NAME and VARIANT should be symbols."
        `(font-lock-function-name-face ((,class (:foreground ,func ))))
 
        ;; for comments
-       `(font-lock-comment-face ((,class (:foreground ,comment, :italic t))))
+       `(font-lock-comment-face ((,class (:foreground ,comment))))
        ;; for comment delimiters, like ‘/*’ and ‘*/’ in C.
-       `(font-lock-comment-delimiter-face ((,class (:foreground ,comment :italic t))))
+       `(font-lock-comment-delimiter-face ((,class (:foreground ,comment))))
        ;; for documentation strings in the code.
-       `(font-lock-doc-face ((,class (:foreground ,comment :italic t))))
+       `(font-lock-doc-face ((,class (:foreground ,comment))))
 
        ;; for easily-overlooked negation characters.
        `(font-lock-negation-char-face ((,class (:foreground ,negation))))
@@ -367,12 +367,13 @@ NAME and VARIANT should be symbols."
        `(treemacs-directory-face ((,class (:foreground ,sec-dark))))
        `(treemacs-file-face ((,class (:inherit immaterial-small-face))))
        `(treemacs-term-node-face ((,class (:foreground ,sec-dark :weight bold))))
-       `(treemacs-git-modified-face ((,class (:foreground ,prim :weight bold))))
-       `(treemacs-git-added-face ((,class (:foreground ,prim-dark :weight bold))))
-       `(treemacs-git-renamed-face ((,class (:foreground ,prim-dark :italic t))))
+       `(treemacs-git-modified-face ((,class (:background ,diff-changed :box (:line-width 1 :color ,diff-changed-refined :style nil)))))
+       `(treemacs-git-added-face ((,class (:background ,diff-added :box (:line-width 1 :color ,diff-added-refined :style nil)))))
+       `(treemacs-git-renamed-face ((,class (:background ,diff-changed :box (:line-width 1 :color ,diff-changed-refined :style nil) :italic t))))
        `(treemacs-git-ignored-face ((,class (:foreground ,discrete))))
        `(treemacs-git-untracked-face ((,class (:foreground ,discrete))))
-       `(treemacs-git-conflict-face ((,class (:foreground ,error :weight bold))))
+       `(treemacs-git-conflict-face ((,class (:background ,diff-removed :box (:line-width 1 :color ,diff-removed-refined :style nil) :italic t))))
+
        ;;
        ;; lsp-ui
        ;;
@@ -409,7 +410,7 @@ NAME and VARIANT should be symbols."
        ;;
        ;; ivy/swiper
        ;;
-       `(ivy-current-match ((,class (:background ,bg-on :weight semi-bold :extend t))))
+       `(ivy-current-match ((,class (:background ,bg-on :extend t))))
        ;; how to highlight the matching part of the search expression on presented
        ;; search candidates in the minibuffer.
        `(ivy-minibuffer-match-face-1 ((,class (:inherit isearch))))
