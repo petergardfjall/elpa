@@ -1,7 +1,7 @@
-(define-package "diff-hl" "20201117.1959" "Highlight uncommitted changes using VC"
+(define-package "diff-hl" "20201201.1956" "Highlight uncommitted changes using VC"
   '((cl-lib "0.2")
     (emacs "24.3"))
-  :commit "f6244abebd23372f1fa0f8bc8a15b2587c090427" :keywords
+  :commit "c31af59cce04fdcf9d05da54a43d236a4869c251" :keywords
   ("vc" "diff")
   :authors
   (("Dmitry Gutov" . "dgutov@yandex.ru"))
