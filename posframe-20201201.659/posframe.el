@@ -5,8 +5,8 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Package-Version: 20201119.512
-;; Package-Commit: 9e9b16b0b27d1ca1973773db9bcdfada9475f34a
+;; Package-Version: 20201201.659
+;; Package-Commit: e1552c82dffaadc5e7de09a44880a498197ffbee
 ;; Version: 0.8.3
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
@@ -424,10 +424,10 @@ position.  Its argument is a plist of the following form:
    :parent-window xxx
    :parent-window-width  xxx
    :parent-window-height xxx
-   :minibuffer-height
-   :mode-line-height
-   :header-line-height
-   :tab-line-height
+   :minibuffer-height xxx
+   :mode-line-height  xxx
+   :header-line-height xxx
+   :tab-line-height xxx
    :x-pixel-offset xxx
    :y-pixel-offset xxx)
 
