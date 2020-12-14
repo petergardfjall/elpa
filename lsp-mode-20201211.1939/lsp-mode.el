@@ -479,46 +479,72 @@ the server has requested that."
   :package-version '(lsp-mode . "6.1"))
 ;;;###autoload(put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
 
-(defcustom lsp-file-watch-ignored '(; SCM tools
-                                    "[/\\\\]\\.git\\'"
-                                    "[/\\\\]\\.hg\\'"
-                                    "[/\\\\]\\.bzr\\'"
-                                    "[/\\\\]_darcs\\'"
-                                    "[/\\\\]\\.svn\\'"
-                                    "[/\\\\]_FOSSIL_\\'"
-                                    ;; IDE or build tools
-                                    "[/\\\\]\\.idea\\'"
-                                    "[/\\\\]\\.ensime_cache\\'"
-                                    "[/\\\\]\\.eunit\\'"
-                                    "[/\\\\]node_modules"
-                                    "[/\\\\]\\.fslckout\\'"
-                                    "[/\\\\]\\.tox\\'"
-                                    "[/\\\\]dist\\'"
-                                    "[/\\\\]dist-newstyle\\'"
-                                    "[/\\\\]\\.stack-work\\'"
-                                    "[/\\\\]\\.bloop\\'"
-                                    "[/\\\\]\\.metals\\'"
-                                    "[/\\\\]target\\'"
-                                    "[/\\\\]\\.ccls-cache\\'"
-                                    "[/\\\\]\\.vscode\\'"
-                                    ;; Autotools output
-                                    "[/\\\\]\\.deps\\'"
-                                    "[/\\\\]build-aux\\'"
-                                    "[/\\\\]autom4te.cache\\'"
-                                    "[/\\\\]\\.reference\\'"
-                                    ;; .Net Core build-output
-                                    "[/\\\\]bin/Debug\\'"
-                                    "[/\\\\]obj\\'")
+(define-obsolete-variable-alias 'lsp-file-watch-ignored 'lsp-file-watch-ignored-directories "7.1.0")
+
+(defcustom lsp-file-watch-ignored-directories
+  '(; SCM tools
+    "[/\\\\]\\.git\\'"
+    "[/\\\\]\\.hg\\'"
+    "[/\\\\]\\.bzr\\'"
+    "[/\\\\]_darcs\\'"
+    "[/\\\\]\\.svn\\'"
+    "[/\\\\]_FOSSIL_\\'"
+    ;; IDE or build tools
+    "[/\\\\]\\.idea\\'"
+    "[/\\\\]\\.ensime_cache\\'"
+    "[/\\\\]\\.eunit\\'"
+    "[/\\\\]node_modules"
+    "[/\\\\]\\.fslckout\\'"
+    "[/\\\\]\\.tox\\'"
+    "[/\\\\]dist\\'"
+    "[/\\\\]dist-newstyle\\'"
+    "[/\\\\]\\.stack-work\\'"
+    "[/\\\\]\\.bloop\\'"
+    "[/\\\\]\\.metals\\'"
+    "[/\\\\]target\\'"
+    "[/\\\\]\\.ccls-cache\\'"
+    "[/\\\\]\\.vscode\\'"
+    ;; Autotools output
+    "[/\\\\]\\.deps\\'"
+    "[/\\\\]build-aux\\'"
+    "[/\\\\]autom4te.cache\\'"
+    "[/\\\\]\\.reference\\'"
+    ;; .Net Core build-output
+    "[/\\\\]bin/Debug\\'"
+    "[/\\\\]obj\\'")
   "List of regexps matching directory paths which won't be monitored when creating file watches."
   :group 'lsp-mode
   :type '(repeat string)
-  :package-version '(lsp-mode . "6.1"))
+  :package-version '(lsp-mode . "7.1.0"))
 
-(defun lsp-file-watch-ignored ()
-  lsp-file-watch-ignored)
+(define-obsolete-function-alias 'lsp-file-watch-ignored 'lsp-file-watch-ignored-directories "7.0.1")
 
-;; Allow lsp-file-watch-ignored as a file or directory-local variable
-(put 'lsp-file-watch-ignored 'safe-local-variable 'lsp--string-listp)
+(defun lsp-file-watch-ignored-directories ()
+  lsp-file-watch-ignored-directories)
+
+;; Allow lsp-file-watch-ignored-directories as a file or directory-local variable
+(put 'lsp-file-watch-ignored-directories 'safe-local-variable 'lsp--string-listp)
+
+(defcustom lsp-file-watch-ignored-files
+  '(
+    ;; lockfiles
+    "[/\\\\]\\.#[^/\\\\]+\\'"
+    ;; backup files
+    "[/\\\\][^/\\\\]+~\\'" )
+  "List of regexps matching files for which change events will
+not be sent to the server.
+
+This setting has no impact on whether a file-watch is created for
+a directory; it merely prevents notifications pertaining to
+matched files from being sent to the server.  To prevent a
+file-watch from being created for a directory, customize
+`lsp-file-watch-ignored-directories'"
+  :group 'lsp-mode
+  :type '(repeat string)
+  :package-version '(lsp-mode . "7.1.0"))
+
+;; Allow lsp-file-watch-ignored-files as a file or directory-local variable
+(put 'lsp-file-watch-ignored-files 'safe-local-variable 'lsp--string-listp)
 
 (defcustom lsp-after-uninitialized-functions nil
   "List of functions to be called after a Language Server has been uninitialized."
@@ -1212,6 +1238,7 @@ FORMAT and ARGS i the same as for `message'."
       (unless log-buffer
         (setq log-buffer (get-buffer-create "*lsp-log*"))
         (with-current-buffer log-buffer
+          (buffer-disable-undo)
           (view-mode 1)
           (set (make-local-variable 'lsp--log-lines) 0)))
       (with-current-buffer log-buffer
@@ -1742,7 +1769,7 @@ This set of allowed chars is enough for hexifying local file paths.")
     (cond
      ((and (file-directory-p file-name)
            (equal 'created event-type)
-           (not (lsp--string-match-any (lsp-file-watch-ignored) file-name)))
+           (not (lsp--string-match-any (lsp-file-watch-ignored-directories) file-name)))
 
       (lsp-watch-root-folder (file-truename file-name) callback watch)
 
@@ -1753,11 +1780,12 @@ This set of allowed chars is enough for hexifying local file paths.")
                      (unless (file-directory-p f)
                        (funcall callback (list nil 'created f)))))))
      ((and (not (file-directory-p file-name))
+           (not (lsp--string-match-any lsp-file-watch-ignored-files file-name))
            (memq event-type '(created deleted changed)))
       (funcall callback event)))))
 
 (defun lsp--directory-files-recursively (dir regexp &optional include-directories)
-  "Copy of `directory-files-recursively' but it skips `lsp-file-watch-ignored'."
+  "Copy of `directory-files-recursively' but it skips `lsp-file-watch-ignored-directories'."
   (let* ((result nil)
          (files nil)
          (dir (directory-file-name dir))
@@ -1768,7 +1796,7 @@ This set of allowed chars is enough for hexifying local file paths.")
                         'string<))
       (unless (member file '("./" "../"))
         (if (and (directory-name-p file)
-                 (not (lsp--string-match-any (lsp-file-watch-ignored) (f-join dir (f-filename file)))))
+                 (not (lsp--string-match-any (lsp-file-watch-ignored-directories) (f-join dir (f-filename file)))))
             (let* ((leaf (substring file 0 (1- (length file))))
                    (full-file (f-join dir leaf)))
               ;; Don't follow symlinks to other directories.
@@ -1837,7 +1865,7 @@ already have been created."
                                                   (file-truename f)
                                                 f)
                                               (lsp-watch-descriptors watch)))
-                                (not (lsp--string-match-any (lsp-file-watch-ignored) f))
+                                (not (lsp--string-match-any (lsp-file-watch-ignored-directories) f))
                                 (not (-contains? '("." "..") (f-filename f)))))
                          (directory-files dir t))))
         (error (lsp-log "Failed to create a watch for %s: message" (error-message-string err)))
@@ -2544,9 +2572,27 @@ an Elisp regexp."
            glob-segments)
           current-regexp)))))
 
-(defun lsp-glob-to-regexp (pattern)
-  "Convert a PATTERN from LSP's glob syntax to an Elisp regexp."
-  (concat "\\`" (lsp--glob-to-regexp (string-trim pattern)) "\\'"))
+;; See https://github.com/emacs-lsp/lsp-mode/issues/2365
+(defun lsp-glob-unbrace-at-top-level (glob-pattern)
+  "If GLOB-PATTERN does not start with a brace, return a singleton list containing GLOB-PATTERN.
+
+If GLOB-PATTERN does start with a brace, return a list of the
+comma-separated globs within the top-level braces."
+  (if (not (string-prefix-p "{" glob-pattern))
+      (list glob-pattern)
+    (lsp-split-glob-pattern (substring glob-pattern 1 -1) ?\,)))
+
+(defun lsp-glob-convert-to-wrapped-regexp (glob-pattern)
+  "Convert GLOB-PATTERN to a regexp wrapped with the beginning-
+and end-of-string meta-characters."
+  (concat "\\`" (lsp--glob-to-regexp (string-trim glob-pattern)) "\\'"))
+
+(defun lsp-glob-to-regexps (glob-pattern)
+  "Convert a GLOB-PATTERN to a list of Elisp regexps."
+  (let* ((trimmed-pattern (string-trim glob-pattern))
+         (top-level-unbraced-patterns (lsp-glob-unbrace-at-top-level trimmed-pattern)))
+    (seq-map #'lsp-glob-convert-to-wrapped-regexp
+             top-level-unbraced-patterns)))
 
 
 
@@ -2630,7 +2676,9 @@ an Elisp regexp."
      "---"
      ("Debug"
       :active (bound-and-true-p dap-ui-mode)
-      :filter ,(lambda (_) (nthcdr 3 dap-ui-menu-items)))))
+      :filter ,(lambda (_)
+                 (and (boundp 'dap-ui-menu-items)
+                      (nthcdr 3 dap-ui-menu-items))))))
   "Menu for lsp-mode.")
 
 (defalias 'make-lsp-client 'make-lsp--client)
@@ -3313,6 +3361,7 @@ disappearing, unset all the variables related to it."
 (defun lsp--file-process-event (session root-folder event)
   "Process file event."
   (let* ((changed-file (cl-third event))
+         (rel-changed-file (f-relative changed-file root-folder))
          (event-numeric-kind (alist-get (cl-second event) lsp--file-change-type))
          (bit-position (1- event-numeric-kind))
          (watch-bit (ash 1 bit-position)))
@@ -3337,9 +3386,11 @@ disappearing, unset all the variables related to it."
                             (-lambda ((&FileSystemWatcher :glob-pattern :kind?))
                               (when (or (null kind?)
                                         (> (logand kind? watch-bit) 0))
-                                (-let [glob-regex (lsp-glob-to-regexp glob-pattern)]
-                                  (or (string-match glob-regex changed-file)
-                                      (string-match glob-regex (f-relative changed-file root-folder))))))))))))
+                                (-let [regexes (lsp-glob-to-regexps glob-pattern)]
+                                  (-any? (lambda (re)
+                                           (or (string-match re changed-file)
+                                               (string-match re rel-changed-file)))
+                                         regexes))))))))))
                  (with-lsp-workspace workspace
                    (lsp-notify
                     "workspace/didChangeWatchedFiles"
@@ -5951,7 +6002,9 @@ PARAMS are the `workspace/configuration' request params"
                        (path-parts-len (length path-parts)))
                  (cond
                   ((<= path-parts-len 1)
-                   (apply 'ht-get* `(,(lsp-configuration-section section?) ,@path-parts)))
+                   (ht-get (lsp-configuration-section section?)
+                           (car-safe path-parts)
+                           (ht-create)))
                   ((> path-parts-len 1)
                    (when-let ((section (lsp-configuration-section path-without-last))
                               (keys path-parts))
@@ -6729,7 +6782,7 @@ returns the command to execute."
   (when lsp-modeline-workspace-status-enable
     (add-hook 'lsp-configure-hook 'lsp-modeline-workspace-status-mode))
   (when lsp-lens-enable
-    (add-hook 'lsp-configure-hook 'lsp-lens-mode))
+    (add-hook 'lsp-configure-hook 'lsp-lens--enable))
 
   ;; yas-snippet config
   (setq-local yas-inhibit-overlay-modification-protection t))
@@ -6947,10 +7000,11 @@ typescript-language-server requires both the server and the
 typescript compiler. If you've installed them in a team shared
 read-only location, you can instruct lsp-mode to use them via
 
-  (eval-after-load 'lsp-clients
-    '(progn
-       (lsp-dependency 'typescript-language-server `(:system ,tls-exe))
-       (lsp-dependency 'typescript `(:system ,ts-js))))
+ (eval-after-load 'lsp-mode
+   '(progn
+      (require 'lsp-javascript)
+      (lsp-dependency 'typescript-language-server `(:system ,tls-exe))
+      (lsp-dependency 'typescript `(:system ,ts-js))))
 
 where tls-exe is the absolute path to the typescript-language-server
 executable and ts-js is the absolute path to the typescript compiler
@@ -7140,19 +7194,33 @@ nil."
 
 
 ;; Download URL handling
-(cl-defun lsp-download-install (callback error-callback &key url store-path &allow-other-keys)
-  (let ((url (lsp-resolve-value url))
-        (store-path (lsp-resolve-value store-path)))
+(cl-defun lsp-download-install (callback error-callback &key url store-path decompress &allow-other-keys)
+  (let* ((url (lsp-resolve-value url))
+         (store-path (lsp-resolve-value store-path))
+         ;; (decompress (lsp-resolve-value decompress))
+         (download-path
+          (pcase decompress
+           (:gzip (concat store-path ".gz"))
+           (:zip (concat store-path ".zip"))
+           (`nil store-path)
+           (_ (error ":decompress must be `:gzip', `:zip' or `nil'")))))
     (make-thread
      (lambda ()
        (condition-case err
            (progn
-             (when (f-exists? store-path)
-               (f-delete store-path))
-             (lsp--info "Starting to download %s to %s..." url store-path)
-             (mkdir (f-parent store-path) t)
-             (url-copy-file url store-path)
-             (lsp--info "Finished downloading %s..." store-path)
+             (when (f-exists? download-path)
+               (f-delete download-path))
+             (lsp--info "Starting to download %s to %s..." url download-path)
+             (mkdir (f-parent download-path) t)
+             (url-copy-file url download-path)
+             (lsp--info "Finished downloading %s..." download-path)
+             (when decompress
+               (lsp--info "Decompressing %s..." download-path)
+               (pcase decompress
+                 (:gzip
+                  (lsp-gunzip download-path))
+                 (:zip (lsp-unzip download-path store-path)))
+               (lsp--info "Decompressed %s..." store-path))
              (funcall callback))
          (error (funcall error-callback err)))))))
 
@@ -7191,7 +7259,24 @@ STORE-PATH to make it executable."
   (unless lsp-unzip-script
     (error "Unable to find `unzip' or `powershell' on the path, please customize `lsp-unzip-script'"))
   (shell-command (format lsp-unzip-script zip-file dest)))
+
+;; gunzip
 
+(defconst lsp-ext-gunzip-script "gzip -d %1$s"
+  "Script to decompress a gzippped file with gzip.")
+
+(defcustom lsp-gunzip-script (cond ((executable-find "gzip") lsp-ext-gunzip-script)
+                                   (t nil))
+  "The script to decompress a gzipped file. Should be a format string with one argument for the file to be decompressed in place."
+  :group 'lsp-mode
+  :type 'string
+  :package-version '(lsp-mode . "7.1"))
+
+(defun lsp-gunzip (gz-file)
+  "Decompress file in place."
+  (unless lsp-gunzip-script
+    (error "Unable to find `gzip' on the path, please either customize `lsp-gunzip-script' or manually decompress %s" gz-file))
+  (shell-command (format lsp-gunzip-script gz-file)))
 
 ;; VSCode marketplace
 
