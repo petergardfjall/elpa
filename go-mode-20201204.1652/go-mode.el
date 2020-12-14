@@ -8,8 +8,8 @@
 
 ;; Author: The go-mode Authors
 ;; Version: 1.5.0
-;; Package-Version: 20201114.2231
-;; Package-Commit: 5186c83e5691932d208fafedf9a1a5ade369eb24
+;; Package-Version: 20201204.1652
+;; Package-Commit: fdf46fe0e110a8e0dddb5aac4ab20a93ee9c5d88
 ;; Keywords: languages go
 ;; URL: https://github.com/dominikh/go-mode.el
 ;;
@@ -3008,7 +3008,7 @@ If BUFFER, return the number of characters in that buffer instead."
 (defvar go-dot-mod-font-lock-keywords
   `(
     (,(concat "^\\s-*\\(" (regexp-opt go-dot-mod-mode-keywords t) "\\)\\s-") 1 font-lock-keyword-face)
-    ("^\\s-*\\([^[:space:]]+\\)\\s-+\\(v[0-9]+\\.[0-9]+\\.[0-9]+\\)\\([^[:space:]\n]*\\)" (1 'go-dot-mod-module-name) (2 'go-dot-mod-module-semver) (3 'go-dot-mod-module-version)))
+    ("\\(?:^\\|=>\\)\\s-*\\([^[:space:]\n()]+\\)\\(?:\\s-+\\(v[0-9]+\\.[0-9]+\\.[0-9]+\\)\\([^[:space:]\n]*\\)\\)?" (1 'go-dot-mod-module-name) (2 'go-dot-mod-module-semver nil t) (3 'go-dot-mod-module-version nil t)))
   "Keyword highlighting specification for `go-dot-mod-mode'.")
 
 ;;;###autoload
