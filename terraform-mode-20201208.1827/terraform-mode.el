@@ -4,8 +4,8 @@
 
 ;; Author: Syohei YOSHIDA <syohex@gmail.com>
 ;; URL: https://github.com/syohex/emacs-terraform-mode
-;; Package-Version: 20201114.4
-;; Package-Commit: 63fafc635b04b1b72e408e7dcb21c1fac78fc60b
+;; Package-Version: 20201208.1827
+;; Package-Commit: a9fa5bdaf58e9cae32ee44b7d0883f5600441b05
 ;; Version: 0.06
 ;; Package-Requires: ((emacs "24.3") (hcl-mode "0.03") (dash "2.17.0"))
 
@@ -152,33 +152,35 @@
     (save-match-data
       (goto-char (point-min))
       (while (re-search-forward terraform--block-builtins-with-type-only--resource-type-highlight-regexp nil t)
-	(-if-let* ((key (match-string 1))
-		   (resource-type (replace-regexp-in-string "\"" "" (match-string 2)))
-		   (location (match-beginning 2))
-		   (matches (gethash (match-string 1) search-results)))
-	    (puthash key (push `(,resource-type . ,location) matches) search-results)
-	  (puthash key `((,resource-type . ,location)) search-results)))
+        (let ((key (match-string 1))
+	      (location (match-beginning 2))
+	      (resource-type (replace-regexp-in-string "\"" "" (match-string 2))))
+	  (-if-let (matches (gethash key search-results))
+	      (puthash key (push `(,resource-type . ,location) matches) search-results)
+	    (puthash key `((,resource-type . ,location)) search-results))))
 
 
       (goto-char (point-min))
       (while (re-search-forward terraform--block-builtins-with-name-only--name-highlight-regexp nil t)
-	(-if-let* ((key (match-string 1))
-		   (resource-name (replace-regexp-in-string "\"" "" (match-string 2)))
-		   (location (match-beginning 2))
-		   (matches (gethash (match-string 1) search-results)))
-	    (puthash key (push `(,resource-name . ,location) matches) search-results)
-	  (puthash key `((,resource-name . ,location)) search-results)))
+        (let ((key (match-string 1))
+	      (location (match-beginning 2))
+	      (resource-name (replace-regexp-in-string "\"" "" (match-string 2))))
+	  (-if-let (matches (gethash key search-results))
+	      (puthash key (push `(,resource-name . ,location) matches) search-results)
+	    (puthash key `((,resource-name . ,location)) search-results))))
 
       (goto-char (point-min))
       (while (re-search-forward terraform--block-builtins-with-type-and-name--name-highlight-regexp nil t)
-	(-if-let* ((key (match-string 1))
-		   (resource-name (concat (replace-regexp-in-string "\"" "" (match-string 2))
-					  "/"
-					  (replace-regexp-in-string "\"" "" (match-string 3))))
-		   (location (match-beginning 2))
-		   (matches (gethash (match-string 1) search-results)))
-	    (puthash key (push `(,resource-name . ,location) matches) search-results)
-	  (puthash key `((,resource-name . ,location)) search-results)))
+        (let* ((key (match-string 1))
+	       (location (match-beginning 2))
+               (type (match-string 2))
+               (name (match-string 3))
+	       (resource-name (concat (replace-regexp-in-string "\"" "" type)
+				      "/"
+				      (replace-regexp-in-string "\"" "" name))))
+	  (-if-let (matches (gethash key search-results))
+	      (puthash key (push `(,resource-name . ,location) matches) search-results)
+	    (puthash key `((,resource-name . ,location)) search-results))))
 
       (maphash (lambda (k v) (push `(,k ,@v) menu-list)) search-results)
       menu-list)))
