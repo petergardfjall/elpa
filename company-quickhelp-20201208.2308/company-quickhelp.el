@@ -4,8 +4,8 @@
 
 ;; Author: Lars Andersen <expez@expez.com>
 ;; URL: https://www.github.com/expez/company-quickhelp
-;; Package-Version: 20200714.1611
-;; Package-Commit: 5a86731de461142db3b7ca26b4681756edb4b773
+;; Package-Version: 20201208.2308
+;; Package-Commit: b13ff1ba0d6176825f165920b17625948f1256c5
 ;; Keywords: company popup documentation quickhelp
 ;; Version: 2.2.0
 ;; Package-Requires: ((emacs "24.3") (company "0.8.9") (pos-tip "0.4.6"))
@@ -174,7 +174,8 @@ currently active `company' completion candidate."
     (pos-tip-hide)))
 
 (defun company-quickhelp--show ()
-  (when (company-quickhelp-pos-tip-available-p)
+  (when (and (company-quickhelp-pos-tip-available-p)
+             company-selection)
     (company-quickhelp--cancel-timer)
     (while-no-input
       (let* ((selected (nth company-selection company-candidates))
