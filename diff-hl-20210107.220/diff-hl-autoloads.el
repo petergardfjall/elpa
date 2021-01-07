@@ -25,6 +25,29 @@ Turn on `diff-hl-mode' or `diff-hl-dir-mode' in a buffer if appropriate." nil ni
 (autoload 'diff-hl--global-turn-on "diff-hl" "\
 Call `turn-on-diff-hl-mode' if the current major mode is applicable." nil nil)
 
+(autoload 'diff-hl-set-reference-rev "diff-hl" "\
+Set the reference revision globally to REV.
+When called interactively, REV is get from contexts:
+
+- In a log view buffer, it uses the revision of current entry.
+Call `vc-print-log' or `vc-print-root-log' first to open a log
+view buffer.
+- In a VC annotate buffer, it uses the revision of current line.
+- In other situations, get the revision name at point.
+
+Notice that this sets the reference revision globally, so in
+files from other repositories, `diff-hl-mode' will not highlight
+changes correctly, until you run `diff-hl-reset-reference-rev'.
+
+Also notice that this will disable `diff-hl-amend-mode' in
+buffers that enables it, since `diff-hl-amend-mode' overrides its
+effect.
+
+\(fn &optional REV)" t nil)
+
+(autoload 'diff-hl-reset-reference-rev "diff-hl" "\
+Reset the reference revision globally to the most recent one." t nil)
+
 (put 'global-diff-hl-mode 'globalized-minor-mode t)
 
 (defvar global-diff-hl-mode nil "\
@@ -59,7 +82,7 @@ See `diff-hl-mode' for more information on Diff-Hl mode.
 (autoload 'diff-hl-amend-mode "diff-hl-amend" "\
 Show changes against the second-last revision in `diff-hl-mode'.
 Most useful with backends that support rewriting local commits,
-and most importantly, 'amending' the most recent one.
+and most importantly, \"amending\" the most recent one.
 Currently only supports Git, Mercurial and Bazaar.
 
 If called interactively, enable Diff-Hl-Amend mode if ARG is

@@ -5,7 +5,7 @@
 ;; Author:   Dmitry Gutov <dgutov@yandex.ru>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
-;; Version:  1.8.7
+;; Version:  1.8.8
 ;; Package-Requires: ((cl-lib "0.2") (emacs "24.3"))
 
 ;; This file is part of GNU Emacs.
@@ -21,7 +21,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -35,6 +35,8 @@
 ;; `diff-hl-revert-hunk'     C-x v n
 ;; `diff-hl-previous-hunk'   C-x v [
 ;; `diff-hl-next-hunk'       C-x v ]
+;; `diff-hl-set-reference-rev'
+;; `diff-hl-reset-reference-rev'
 ;;
 ;; The mode takes advantage of `smartrep' if it is installed.
 
@@ -55,6 +57,8 @@
 (require 'diff-mode)
 (require 'vc)
 (require 'vc-dir)
+(require 'log-view)
+
 (eval-when-compile
   (require 'cl-lib)
   (require 'vc-git)
@@ -358,6 +362,15 @@ performance when viewing such files in certain conditions."
                 (overlay-put h 'insert-in-front-hooks hook)
                 (overlay-put h 'insert-behind-hooks hook)))))))))
 
+(defvar-local diff-hl--modified-tick nil)
+
+(put 'diff-hl--modified-tick 'permanent-local t)
+
+(defun diff-hl-update-once ()
+  (unless (equal diff-hl--modified-tick (buffer-chars-modified-tick))
+    (diff-hl-update)
+    (setq diff-hl--modified-tick (buffer-chars-modified-tick))))
+
 (defun diff-hl-add-highlighting (type shape)
   (let ((o (make-overlay (point) (point))))
     (overlay-put o 'diff-hl t)
@@ -395,6 +408,11 @@ performance when viewing such files in certain conditions."
   (with-current-buffer buffer
     (unless (buffer-modified-p)
       (diff-hl-update))))
+
+(defun diff-hl-after-revert ()
+  (defvar revert-buffer-preserve-modes)
+  (when revert-buffer-preserve-modes
+    (diff-hl-update)))
 
 (defun diff-hl-diff-goto-hunk-1 ()
   (vc-buffer-sync)
@@ -571,11 +589,15 @@ The value of this variable is a mode line template as in
                     ;; let's wait until the state information is
                     ;; saved, in order not to fetch it twice.
                     'find-file-hook)
-                  'diff-hl-update t t)
+                  'diff-hl-update-once t t)
         (add-hook 'vc-checkin-hook 'diff-hl-update nil t)
+        (add-hook 'after-revert-hook 'diff-hl-after-revert nil t)
+        ;; Magit does call `auto-revert-handler', but it usually
+        ;; doesn't do much, because `buffer-stale--default-function'
+        ;; doesn't care about changed VC state.
         ;; https://github.com/magit/magit/issues/603
         (add-hook 'magit-revert-buffer-hook 'diff-hl-update nil t)
-        ;; Magit versions 2.0-2.3 don't use the above and call this
+        ;; Magit versions 2.0-2.3 don't do the above and call this
         ;; instead, but only when they don't call `revert-buffer':
         (add-hook 'magit-not-reverted-hook 'diff-hl-update nil t)
         (add-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps nil t))
@@ -583,6 +605,7 @@ The value of this variable is a mode line template as in
     (remove-hook 'after-change-functions 'diff-hl-edit t)
     (remove-hook 'find-file-hook 'diff-hl-update t)
     (remove-hook 'vc-checkin-hook 'diff-hl-update t)
+    (remove-hook 'after-revert-hook 'diff-hl-update t)
     (remove-hook 'magit-revert-buffer-hook 'diff-hl-update t)
     (remove-hook 'magit-not-reverted-hook 'diff-hl-update t)
     (remove-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps t)
@@ -677,6 +700,51 @@ The value of this variable is a mode line template as in
                (not (memq major-mode (cdr diff-hl-global-modes))))
               (t (memq major-mode diff-hl-global-modes)))
     (turn-on-diff-hl-mode)))
+
+;;;###autoload
+(defun diff-hl-set-reference-rev (&optional rev)
+  "Set the reference revision globally to REV.
+When called interactively, REV is get from contexts:
+
+- In a log view buffer, it uses the revision of current entry.
+Call `vc-print-log' or `vc-print-root-log' first to open a log
+view buffer.
+- In a VC annotate buffer, it uses the revision of current line.
+- In other situations, get the revision name at point.
+
+Notice that this sets the reference revision globally, so in
+files from other repositories, `diff-hl-mode' will not highlight
+changes correctly, until you run `diff-hl-reset-reference-rev'.
+
+Also notice that this will disable `diff-hl-amend-mode' in
+buffers that enables it, since `diff-hl-amend-mode' overrides its
+effect."
+  (interactive)
+  (let* ((rev (or rev
+                  (and (equal major-mode 'vc-annotate-mode)
+                       (car (vc-annotate-extract-revision-at-line)))
+                  (log-view-current-tag)
+                  (thing-at-point 'symbol t))))
+    (if rev
+        (message "Set reference rev to %s" rev)
+      (user-error "Can't find a revision around point"))
+    (setq diff-hl-reference-revision rev))
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when diff-hl-mode
+        (when diff-hl-amend-mode
+          (diff-hl-amend-mode -1))
+        (diff-hl-update)))))
+
+;;;###autoload
+(defun diff-hl-reset-reference-rev ()
+  "Reset the reference revision globally to the most recent one."
+  (interactive)
+  (setq diff-hl-reference-revision nil)
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when diff-hl-mode
+        (diff-hl-update)))))
 
 ;;;###autoload
 (define-globalized-minor-mode global-diff-hl-mode diff-hl-mode
