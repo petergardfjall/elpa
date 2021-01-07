@@ -5,8 +5,8 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Package-Version: 20201201.659
-;; Package-Commit: e1552c82dffaadc5e7de09a44880a498197ffbee
+;; Package-Version: 20201224.2318
+;; Package-Commit: ae8ac91744010c8975f07cf18282f58ce56605d0
 ;; Version: 0.8.3
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
@@ -143,7 +143,8 @@
 ;; 3. [[https://github.com/tumashu/pyim][pyim]]
 ;; 4. [[https://github.com/tumashu/ivy-posframe][ivy-posframe]]
 ;; 5. [[https://github.com/tumashu/company-posframe][company-posframe]]
-;; 6. ...
+;; 6. [[https://github.com/randomwangran/org-marginalia-posframe][org-marginalia-posframe]]
+;; 7. ...
 
 ;;; Code:
 ;; * posframe's code                         :CODE:
