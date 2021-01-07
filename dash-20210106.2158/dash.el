@@ -1,12 +1,14 @@
 ;;; dash.el --- A modern list library for Emacs  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012-2016 Free Software Foundation, Inc.
+;; Copyright (C) 2012-2021 Free Software Foundation, Inc.
 
 ;; Author: Magnar Sveen <magnars@gmail.com>
 ;; Version: 2.17.0
-;; Keywords: lists
+;; Package-Requires: ((emacs "24"))
+;; Keywords: extensions, lisp
+;; Homepage: https://github.com/magnars/dash.el
 
-;; This program is free software; you can redistribute it and/or modify
+;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
@@ -17,19 +19,13 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
-;; A modern list api for Emacs.
+;; A modern list API for Emacs.
 ;;
-;; See documentation on https://github.com/magnars/dash.el#functions
-;;
-;; **Please note** The lexical binding in this file is not utilised at the
-;; moment. We will take full advantage of lexical binding in an upcoming 3.0
-;; release of Dash. In the meantime, we've added the pragma to avoid a bug that
-;; you can read more about in https://github.com/magnars/dash.el/issues/130.
-;;
+;; See its overview at https://github.com/magnars/dash.el#functions.
 
 ;;; Code:
 
@@ -40,21 +36,10 @@
     (require 'cl)))
 
 (defgroup dash ()
-  "Customize group for dash.el"
+  "Customize group for Dash, a modern list library."
+  :group 'extensions
   :group 'lisp
   :prefix "dash-")
-
-(defun dash--enable-fontlock (symbol value)
-  (when value
-    (dash-enable-font-lock))
-  (set-default symbol value))
-
-(defcustom dash-enable-fontlock nil
-  "If non-nil, enable fontification of dash functions, macros and
-special values."
-  :type 'boolean
-  :set 'dash--enable-fontlock
-  :group 'dash)
 
 (defmacro !cons (car cdr)
   "Destructive: Set CDR to the cons of CAR and CDR."
@@ -65,148 +50,171 @@ special values."
   `(setq ,list (cdr ,list)))
 
 (defmacro --each (list &rest body)
-  "Anaphoric form of `-each'."
-  (declare (debug (form body))
-           (indent 1))
-  (let ((l (make-symbol "list")))
+  "Evaluate BODY for each element of LIST and return nil.
+Each element of LIST in turn is bound to `it' and its index
+within LIST to `it-index' before evaluating BODY.
+This is the anaphoric counterpart to `-each'."
+  (declare (debug (form body)) (indent 1))
+  (let ((l (make-symbol "list"))
+        (i (make-symbol "i")))
     `(let ((,l ,list)
-           (it-index 0))
+           (,i 0)
+           it it-index)
+       (ignore it it-index)
        (while ,l
-         (let ((it (car ,l)))
-           ,@body)
-         (setq it-index (1+ it-index))
-         (!cdr ,l)))))
-
-(defmacro -doto (eval-initial-value &rest forms)
-  "Eval a form, then insert that form as the 2nd argument to other forms.
-The EVAL-INITIAL-VALUE form is evaluated once. Its result is
-passed to FORMS, which are then evaluated sequentially. Returns
-the target form."
-  (declare (indent 1))
-  (let ((retval (make-symbol "value")))
-    `(let ((,retval ,eval-initial-value))
-       ,@(mapcar (lambda (form)
-                   (if (sequencep form)
-                       `(,(-first-item form) ,retval ,@(cdr form))
-                     `(funcall form ,retval)))
-                 forms)
-       ,retval)))
-
-(defmacro --doto (eval-initial-value &rest forms)
-  "Anaphoric form of `-doto'.
-Note: `it' is not required in each form."
-  (declare (indent 1))
-  `(let ((it ,eval-initial-value))
-     ,@forms
-     it))
+         (setq it (pop ,l) it-index ,i ,i (1+ ,i))
+         ,@body))))
 
 (defun -each (list fn)
-  "Call FN with every item in LIST. Return nil, used for side-effects only."
-  (--each list (funcall fn it)))
-
-(put '-each 'lisp-indent-function 1)
+  "Call FN on each element of LIST.
+Return nil; this function is intended for side effects.
+Its anaphoric counterpart is `--each'.  For access to the current
+element's index in LIST, see `-each-indexed'."
+  (declare (indent 1))
+  (ignore (mapc fn list)))
 
 (defalias '--each-indexed '--each)
 
 (defun -each-indexed (list fn)
-  "Call (FN index item) for each item in LIST.
-
-In the anaphoric form `--each-indexed', the index is exposed as symbol `it-index'.
-
+  "Call FN on each index and element of LIST.
+For each ITEM at INDEX in LIST, call (funcall FN INDEX ITEM).
+Return nil; this function is intended for side effects.
 See also: `-map-indexed'."
+  (declare (indent 1))
   (--each list (funcall fn it-index it)))
-(put '-each-indexed 'lisp-indent-function 1)
 
 (defmacro --each-while (list pred &rest body)
-  "Anaphoric form of `-each-while'."
-  (declare (debug (form form body))
-           (indent 2))
+  "Evaluate BODY for each item in LIST, while PRED evaluates to non-nil.
+Each element of LIST in turn is bound to `it' and its index
+within LIST to `it-index' before evaluating PRED or BODY.  Once
+an element is reached for which PRED evaluates to nil, no further
+BODY is evaluated.  The return value is always nil.
+This is the anaphoric counterpart to `-each-while'."
+  (declare (debug (form form body)) (indent 2))
   (let ((l (make-symbol "list"))
-        (c (make-symbol "continue")))
+        (i (make-symbol "i"))
+        (elt (make-symbol "elt")))
     `(let ((,l ,list)
-           (,c t)
-           (it-index 0))
-       (while (and ,l ,c)
-         (let ((it (car ,l)))
-           (if (not ,pred) (setq ,c nil) ,@body))
-         (setq it-index (1+ it-index))
-         (!cdr ,l)))))
+           (,i 0)
+           ,elt it it-index)
+       (ignore it it-index)
+       (while (and ,l (setq ,elt (pop ,l) it ,elt it-index ,i) ,pred)
+         (setq it ,elt it-index ,i ,i (1+ ,i))
+         ,@body))))
 
 (defun -each-while (list pred fn)
-  "Call FN with every item in LIST while (PRED item) is non-nil.
-Return nil, used for side-effects only."
+  "Call FN on each ITEM in LIST, while (PRED ITEM) is non-nil.
+Once an ITEM is reached for which PRED returns nil, FN is no
+longer called.  Return nil; this function is intended for side
+effects.
+Its anaphoric counterpart is `--each-while'."
+  (declare (indent 2))
   (--each-while list (funcall pred it) (funcall fn it)))
 
-(put '-each-while 'lisp-indent-function 2)
-
 (defmacro --each-r (list &rest body)
-  "Anaphoric form of `-each-r'."
-  (declare (debug (form body))
-           (indent 1))
-  (let ((v (make-symbol "vector")))
-    ;; Implementation note: building vector is considerably faster
+  "Evaluate BODY for each element of LIST in reversed order.
+Each element of LIST in turn, starting at its end, is bound to
+`it' and its index within LIST to `it-index' before evaluating
+BODY.  The return value is always nil.
+This is the anaphoric counterpart to `-each-r'."
+  (declare (debug (form body)) (indent 1))
+  (let ((v (make-symbol "vector"))
+        (i (make-symbol "i")))
+    ;; Implementation note: building a vector is considerably faster
     ;; than building a reversed list (vector takes less memory, so
-    ;; there is less GC), plus length comes naturally.  In-place
-    ;; 'nreverse' would be faster still, but BODY would be able to see
-    ;; that, even if modification was reversed before we return.
+    ;; there is less GC), plus `length' comes naturally.  In-place
+    ;; `nreverse' would be faster still, but BODY would be able to see
+    ;; that, even if the modification was undone before we return.
     `(let* ((,v (vconcat ,list))
-            (it-index (length ,v))
-            it)
-       (while (> it-index 0)
-         (setq it-index (1- it-index))
-         (setq it (aref ,v it-index))
+            (,i (length ,v))
+            it it-index)
+       (ignore it it-index)
+       (while (> ,i 0)
+         (setq ,i (1- ,i) it-index ,i it (aref ,v ,i))
          ,@body))))
 
 (defun -each-r (list fn)
-  "Call FN with every item in LIST in reversed order.
- Return nil, used for side-effects only."
+  "Call FN on each element of LIST in reversed order.
+Return nil; this function is intended for side effects.
+Its anaphoric counterpart is `--each-r'."
   (--each-r list (funcall fn it)))
 
 (defmacro --each-r-while (list pred &rest body)
-  "Anaphoric form of `-each-r-while'."
-  (declare (debug (form form body))
-           (indent 2))
-  (let ((v (make-symbol "vector")))
+  "Eval BODY for each item in reversed LIST, while PRED evals to non-nil.
+Each element of LIST in turn, starting at its end, is bound to
+`it' and its index within LIST to `it-index' before evaluating
+PRED or BODY.  Once an element is reached for which PRED
+evaluates to nil, no further BODY is evaluated.  The return value
+is always nil.
+This is the anaphoric counterpart to `-each-r-while'."
+  (declare (debug (form form body)) (indent 2))
+  (let ((v (make-symbol "vector"))
+        (i (make-symbol "i"))
+        (elt (make-symbol "elt")))
     `(let* ((,v (vconcat ,list))
-            (it-index (length ,v))
-            it)
-       (while (> it-index 0)
-         (setq it-index (1- it-index))
-         (setq it (aref ,v it-index))
-         (if (not ,pred)
-             (setq it-index -1)
-           ,@body)))))
+            (,i (length ,v))
+            ,elt it it-index)
+       (ignore it it-index)
+       (while (when (> ,i 0)
+                (setq ,i (1- ,i) it-index ,i)
+                (setq ,elt (aref ,v ,i) it ,elt)
+                ,pred)
+         (setq it-index ,i it ,elt)
+         ,@body))))
 
 (defun -each-r-while (list pred fn)
-  "Call FN with every item in reversed LIST while (PRED item) is non-nil.
-Return nil, used for side-effects only."
+  "Call FN on each ITEM in reversed LIST, while (PRED ITEM) is non-nil.
+Once an ITEM is reached for which PRED returns nil, FN is no
+longer called.  Return nil; this function is intended for side
+effects.
+Its anaphoric counterpart is `--each-r-while'."
   (--each-r-while list (funcall pred it) (funcall fn it)))
 
 (defmacro --dotimes (num &rest body)
-  "Repeatedly executes BODY (presumably for side-effects) with symbol `it' bound to integers from 0 through NUM-1."
-  (declare (debug (form body))
-           (indent 1))
-  (let ((n (make-symbol "num")))
+  "Evaluate BODY NUM times, presumably for side effects.
+BODY is evaluated with the local variable `it' temporarily bound
+to successive integers running from 0, inclusive, to NUM,
+exclusive.  BODY is not evaluated if NUM is less than 1.
+This is the anaphoric counterpart to `-dotimes'."
+  (declare (debug (form body)) (indent 1))
+  (let ((n (make-symbol "num"))
+        (i (make-symbol "i")))
     `(let ((,n ,num)
-           (it 0))
-       (while (< it ,n)
-         ,@body
-         (setq it (1+ it))))))
+           (,i 0)
+           it)
+       (ignore it)
+       (while (< ,i ,n)
+         (setq it ,i ,i (1+ ,i))
+         ,@body))))
 
 (defun -dotimes (num fn)
-  "Repeatedly calls FN (presumably for side-effects) passing in integers from 0 through NUM-1."
+  "Call FN NUM times, presumably for side effects.
+FN is called with a single argument on successive integers
+running from 0, inclusive, to NUM, exclusive.  FN is not called
+if NUM is less than 1.
+This function's anaphoric counterpart is `--dotimes'."
+  (declare (indent 1))
   (--dotimes num (funcall fn it)))
 
-(put '-dotimes 'lisp-indent-function 1)
-
 (defun -map (fn list)
-  "Return a new list consisting of the result of applying FN to the items in LIST."
+  "Apply FN to each item in LIST and return the list of results.
+This function's anaphoric counterpart is `--map'."
   (mapcar fn list))
 
 (defmacro --map (form list)
-  "Anaphoric form of `-map'."
+  "Eval FORM for each item in LIST and return the list of results.
+Each element of LIST in turn is bound to `it' before evaluating
+BODY.
+This is the anaphoric counterpart to `-map'."
   (declare (debug (form form)))
-  `(mapcar (lambda (it) ,form) ,list))
+  (let ((l (make-symbol "list"))
+        (r (make-symbol "res")))
+    `(let ((,l ,list) ,r it)
+       (ignore it)
+       (while ,l
+         (setq it (pop ,l))
+         (push ,form ,r))
+       (nreverse ,r))))
 
 (defmacro --reduce-from (form initial-value list)
   "Anaphoric form of `-reduce-from'."
@@ -530,6 +538,26 @@ See also: `-map-last'"
 Thus function FN should return a list."
   (--mapcat (funcall fn it) list))
 
+(defmacro --iterate (form init n)
+  "Anaphoric version of `-iterate'."
+  (declare (debug (form form form)))
+  (let ((res (make-symbol "result")))
+    `(let ((it ,init) ,res)
+       (dotimes (_ ,n)
+         (push it ,res)
+         (setq it ,form))
+       (nreverse ,res))))
+
+(defun -iterate (fun init n)
+  "Return a list of iterated applications of FUN to INIT.
+
+This means a list of the form:
+
+  (INIT (FUN INIT) (FUN (FUN INIT)) ...)
+
+N is the length of the returned list."
+  (--iterate (funcall fun it) init n))
+
 (defun -flatten (l)
   "Take a nested list L and return its contents as a single, flat list.
 
@@ -546,11 +574,6 @@ See also: `-flatten-n'"
   (if (and (listp l) (listp (cdr l)))
       (-mapcat '-flatten l)
     (list l)))
-
-(defmacro --iterate (form init n)
-  "Anaphoric version of `-iterate'."
-  (declare (debug (form form form)))
-  `(-iterate (lambda (it) ,form) ,init ,n))
 
 (defun -flatten-n (num list)
   "Flatten NUM levels of a nested LIST.
@@ -847,50 +870,21 @@ section is returned.  Defaults to 1."
         (push it new-list)))
     (nreverse new-list)))
 
-(defun -take (n list)
-  "Return a new list of the first N items in LIST, or all items if there are fewer than N.
-
-See also: `-take-last'"
-  (declare (pure t) (side-effect-free t))
-  (let (result)
-    (--dotimes n
-      (when list
-        (!cons (car list) result)
-        (!cdr list)))
-    (nreverse result)))
-
-(defun -take-last (n list)
-  "Return the last N items of LIST in order.
-
-See also: `-take'"
-  (declare (pure t) (side-effect-free t))
-  (copy-sequence (last list n)))
-
-(defalias '-drop 'nthcdr
-  "Return the tail of LIST without the first N items.
-
-See also: `-drop-last'
-
-\(fn N LIST)")
-
-(defun -drop-last (n list)
-  "Remove the last N items of LIST and return a copy.
-
-See also: `-drop'"
-  ;; No alias because we don't want magic optional argument
-  (declare (pure t) (side-effect-free t))
-  (butlast list n))
-
 (defmacro --take-while (form list)
   "Anaphoric form of `-take-while'."
   (declare (debug (form form)))
   (let ((r (make-symbol "result")))
     `(let (,r)
-       (--each-while ,list ,form (!cons it ,r))
+       (--each-while ,list ,form (push it ,r))
        (nreverse ,r))))
 
 (defun -take-while (pred list)
-  "Return a new list of successive items from LIST while (PRED item) returns a non-nil value."
+  "Take successive items from LIST for which PRED returns non-nil.
+PRED is a function of one argument.  Return a new list of the
+successive elements from the start of LIST for which PRED returns
+non-nil.
+
+See also: `-drop-while'"
   (--take-while (funcall pred it) list))
 
 (defmacro --drop-while (form list)
@@ -898,13 +892,51 @@ See also: `-drop'"
   (declare (debug (form form)))
   (let ((l (make-symbol "list")))
     `(let ((,l ,list))
-       (while (and ,l (let ((it (car ,l))) ,form))
-         (!cdr ,l))
-       ,l)))
+       (--each-while ,l ,form (pop ,l))
+       (copy-sequence ,l))))
 
 (defun -drop-while (pred list)
-  "Return the tail of LIST starting from the first item for which (PRED item) returns nil."
+  "Drop successive items from LIST for which PRED returns non-nil.
+PRED is a function of one argument.  Return a copy of the tail of
+LIST starting from its first element for which PRED returns nil.
+
+See also: `-take-while'"
   (--drop-while (funcall pred it) list))
+
+(defun -take (n list)
+  "Return a copy of the first N items in LIST.
+Return a copy of LIST if it contains N items or fewer.
+Return nil if N is zero or less.
+
+See also: `-take-last'"
+  (declare (pure t) (side-effect-free t))
+  (--take-while (< it-index n) list))
+
+(defun -take-last (n list)
+  "Return a copy of the last N items of LIST in order.
+Return a copy of LIST if it contains N items or fewer.
+Return nil if N is zero or less.
+
+See also: `-take'"
+  (declare (pure t) (side-effect-free t))
+  (copy-sequence (last list n)))
+
+(defun -drop (n list)
+  "Return a copy of the tail of LIST without the first N items.
+Return a copy of LIST if N is zero or less.
+Return nil if LIST contains N items or fewer.
+
+See also: `-drop-last'"
+  (copy-sequence (nthcdr n list)))
+
+(defun -drop-last (n list)
+  "Return a copy of LIST without its last N items.
+Return a copy of LIST if N is zero or less.
+Return nil if LIST contains N items or fewer.
+
+See also: `-drop'"
+  (declare (pure t) (side-effect-free t))
+  (nbutlast (copy-sequence list) n))
 
 (defun -split-at (n list)
   "Return a list of ((-take N LIST) (-drop N LIST)), in no more than one pass through the list."
@@ -1334,10 +1366,12 @@ See also: `-zip'"
   (apply '-zip lists))
 
 (defun -cycle (list)
-  "Return an infinite copy of LIST that will cycle through the
-elements and repeat from the beginning."
+  "Return an infinite circular copy of LIST.
+The returned list cycles through the elements of LIST and repeats
+from the beginning."
   (declare (pure t) (side-effect-free t))
-  (let ((newlist (-map 'identity list)))
+  ;; Also works with sequences that aren't lists.
+  (let ((newlist (append list ())))
     (nconc newlist newlist)))
 
 (defun -pad (fill-value &rest lists)
@@ -1591,6 +1625,27 @@ and when that result is non-nil, through the next form, etc."
                    (--> ,result ,form))
                  ,@more))))
 
+(defmacro -doto (init &rest forms)
+  "Evaluate INIT and pass it as argument to FORMS with `->'.
+The RESULT of evaluating INIT is threaded through each of FORMS
+individually using `->', which see.  The return value is RESULT,
+which FORMS may have modified by side effect."
+  (declare (debug (form body)) (indent 1))
+  (let ((retval (make-symbol "result")))
+    `(let ((,retval ,init))
+       ,@(mapcar (lambda (form) `(-> ,retval ,form)) forms)
+       ,retval)))
+
+(defmacro --doto (init &rest forms)
+  "Anaphoric form of `-doto'.
+This just evaluates INIT, binds the result to `it', evaluates
+FORMS, and returns the final value of `it'.
+Note: `it' need not be used in each form."
+  (declare (debug (form body)) (indent 1))
+  `(let ((it ,init))
+     ,@forms
+     it))
+
 (defun -grade-up (comparator list)
   "Grade elements of LIST using COMPARATOR relation, yielding a
 permutation vector such that applying this permutation to LIST
@@ -1717,17 +1772,6 @@ SOURCE is a proper or improper list."
      (t ;; Handle improper lists.  Last matching place, no need for shift
       (dash--match match-form (dash--match-cons-get-cdr skip-cdr source))))))
 
-(defun dash--vector-tail (seq start)
-  "Return the tail of SEQ starting at START."
-  (cond
-   ((vectorp seq)
-    (let* ((re-length (- (length seq) start))
-           (re (make-vector re-length 0)))
-      (--dotimes re-length (aset re it (aref seq (+ it start))))
-      re))
-   ((stringp seq)
-    (substring seq start))))
-
 (defun dash--match-vector (match-form source)
   "Setup a vector matching environment and call the real matcher."
   (let ((s (dash--match-make-source-symbol)))
@@ -1775,7 +1819,7 @@ is discarded."
                      (eq m '&rest))
                 (prog1 (dash--match
                         (aref match-form (1+ i))
-                        `(dash--vector-tail ,source ,i))
+                        `(substring ,source ,i))
                   (setq i l)))
                ((and (symbolp m)
                      ;; do not match symbols starting with _
@@ -1926,7 +1970,7 @@ Key-value stores are disambiguated by placing a token &plist,
            (eq '&as (aref match-form 1)))
       (let ((s (aref match-form 0)))
         (cons (list s source)
-              (dash--match (dash--vector-tail match-form 2) s))))
+              (dash--match (substring match-form 2) s))))
      (t (dash--match-vector match-form source))))))
 
 (defun dash--normalize-let-varlist (varlist)
@@ -1978,11 +2022,11 @@ If VARLIST only contains one (PATTERN SOURCE) element, you can
 optionally specify it using a vector and discarding the
 outer-most parens.  Thus
 
-  (-let ((PATTERN SOURCE)) ..)
+  (-let ((PATTERN SOURCE)) ...)
 
 becomes
 
-  (-let [PATTERN SOURCE] ..).
+  (-let [PATTERN SOURCE] ...).
 
 `-let' uses a convention of not binding places (symbols) starting
 with _ whenever it's possible.  You can use this to skip over
@@ -2007,7 +2051,7 @@ Conses and lists:
 
   (a b) - bind car of list to A and `cadr' to B
 
-  (a1 a2 a3  ...) - bind 0th car of list to A1, 1st to A2, 2nd to A3 ...
+  (a1 a2 a3 ...) - bind 0th car of list to A1, 1st to A2, 2nd to A3...
 
   (a1 a2 a3 ... aN . rest) - as above, but bind the Nth cdr to REST.
 
@@ -2471,21 +2515,17 @@ if the first element should sort before the second."
   `(-sort (lambda (it other) ,form) ,list))
 
 (defun -list (&rest args)
-  "Return a list with ARGS.
-
-If first item of ARGS is already a list, simply return ARGS.  If
-not, return a list with ARGS as elements."
+  "Return a list based on ARGS.
+If the first item of ARGS is already a list, simply return it.
+Otherwise, return a list with ARGS as elements."
   (declare (pure t) (side-effect-free t))
-  (let ((arg (car args)))
-    (if (listp arg) arg args)))
+  (if (listp (car args)) (car args) args))
 
 (defun -repeat (n x)
-  "Return a list with X repeated N times.
+  "Return a new list of length N with each element being X.
 Return nil if N is less than 1."
   (declare (pure t) (side-effect-free t))
-  (let (ret)
-    (--dotimes n (!cons x ret))
-    ret))
+  (and (natnump n) (make-list n x)))
 
 (defun -sum (list)
   "Return the sum of LIST."
@@ -2554,20 +2594,6 @@ The items for the comparator form are exposed as \"it\" and \"other\"."
 The items for the comparator form are exposed as \"it\" and \"other\"."
   (declare (debug (form form)))
   `(-min-by (lambda (it other) ,form) ,list))
-
-(defun -iterate (fun init n)
-  "Return a list of iterated applications of FUN to INIT.
-
-This means a list of form:
-
-  (init (fun init) (fun (fun init)) ...)
-
-N is the length of the returned list."
-  (if (= n 0) nil
-    (let ((r (list init)))
-      (--dotimes (1- n)
-        (push (funcall fun (car r)) r))
-      (nreverse r))))
 
 (defun -fix (fn list)
   "Compute the (least) fixpoint of FN with initial input LIST.
@@ -2775,298 +2801,157 @@ structure such as plist or alist."
   (declare (pure t) (side-effect-free t))
   (-tree-map 'identity list))
 
-(defun dash-enable-font-lock ()
-  "Add syntax highlighting to dash functions, macros and magic values."
-  (eval-after-load 'lisp-mode
-    '(progn
-       (let ((new-keywords '(
-                             "!cons"
-                             "!cdr"
-                             "-each"
-                             "--each"
-                             "-each-indexed"
-                             "--each-indexed"
-                             "-each-while"
-                             "--each-while"
-                             "-doto"
-                             "-dotimes"
-                             "--dotimes"
-                             "-map"
-                             "--map"
-                             "-reduce-from"
-                             "--reduce-from"
-                             "-reduce"
-                             "--reduce"
-                             "-reduce-r-from"
-                             "--reduce-r-from"
-                             "-reduce-r"
-                             "--reduce-r"
-                             "-reductions-from"
-                             "-reductions-r-from"
-                             "-reductions"
-                             "-reductions-r"
-                             "-filter"
-                             "--filter"
-                             "-select"
-                             "--select"
-                             "-remove"
-                             "--remove"
-                             "-reject"
-                             "--reject"
-                             "-remove-first"
-                             "--remove-first"
-                             "-reject-first"
-                             "--reject-first"
-                             "-remove-last"
-                             "--remove-last"
-                             "-reject-last"
-                             "--reject-last"
-                             "-remove-item"
-                             "-non-nil"
-                             "-keep"
-                             "--keep"
-                             "-map-indexed"
-                             "--map-indexed"
-                             "-splice"
-                             "--splice"
-                             "-splice-list"
-                             "--splice-list"
-                             "-map-when"
-                             "--map-when"
-                             "-replace-where"
-                             "--replace-where"
-                             "-map-first"
-                             "--map-first"
-                             "-map-last"
-                             "--map-last"
-                             "-replace"
-                             "-replace-first"
-                             "-replace-last"
-                             "-flatten"
-                             "-flatten-n"
-                             "-concat"
-                             "-mapcat"
-                             "--mapcat"
-                             "-copy"
-                             "-cons*"
-                             "-snoc"
-                             "-first"
-                             "--first"
-                             "-find"
-                             "--find"
-                             "-some"
-                             "--some"
-                             "-any"
-                             "--any"
-                             "-last"
-                             "--last"
-                             "-first-item"
-                             "-second-item"
-                             "-third-item"
-                             "-fourth-item"
-                             "-fifth-item"
-                             "-last-item"
-                             "-butlast"
-                             "-count"
-                             "--count"
-                             "-any?"
-                             "--any?"
-                             "-some?"
-                             "--some?"
-                             "-any-p"
-                             "--any-p"
-                             "-some-p"
-                             "--some-p"
-                             "-some->"
-                             "-some->>"
-                             "-some-->"
-                             "-all?"
-                             "-all-p"
-                             "--all?"
-                             "--all-p"
-                             "-every?"
-                             "--every?"
-                             "-all-p"
-                             "--all-p"
-                             "-every-p"
-                             "--every-p"
-                             "-none?"
-                             "--none?"
-                             "-none-p"
-                             "--none-p"
-                             "-only-some?"
-                             "--only-some?"
-                             "-only-some-p"
-                             "--only-some-p"
-                             "-slice"
-                             "-take"
-                             "-drop"
-                             "-drop-last"
-                             "-take-last"
-                             "-take-while"
-                             "--take-while"
-                             "-drop-while"
-                             "--drop-while"
-                             "-split-at"
-                             "-rotate"
-                             "-insert-at"
-                             "-replace-at"
-                             "-update-at"
-                             "--update-at"
-                             "-remove-at"
-                             "-remove-at-indices"
-                             "-split-with"
-                             "--split-with"
-                             "-split-on"
-                             "-split-when"
-                             "--split-when"
-                             "-separate"
-                             "--separate"
-                             "-partition-all-in-steps"
-                             "-partition-in-steps"
-                             "-partition-all"
-                             "-partition"
-                             "-partition-after-item"
-                             "-partition-after-pred"
-                             "-partition-before-item"
-                             "-partition-before-pred"
-                             "-partition-by"
-                             "--partition-by"
-                             "-partition-by-header"
-                             "--partition-by-header"
-                             "-group-by"
-                             "--group-by"
-                             "-interpose"
-                             "-interleave"
-                             "-unzip"
-                             "-zip-with"
-                             "--zip-with"
-                             "-zip"
-                             "-zip-fill"
-                             "-zip-lists"
-                             "-zip-pair"
-                             "-cycle"
-                             "-pad"
-                             "-annotate"
-                             "--annotate"
-                             "-table"
-                             "-table-flat"
-                             "-partial"
-                             "-elem-index"
-                             "-elem-indices"
-                             "-find-indices"
-                             "--find-indices"
-                             "-find-index"
-                             "--find-index"
-                             "-find-last-index"
-                             "--find-last-index"
-                             "-select-by-indices"
-                             "-select-columns"
-                             "-select-column"
-                             "-grade-up"
-                             "-grade-down"
-                             "->"
-                             "->>"
-                             "-->"
-                             "-as->"
-                             "-when-let"
-                             "-when-let*"
-                             "--when-let"
-                             "-if-let"
-                             "-if-let*"
-                             "--if-let"
-                             "-let*"
-                             "-let"
-                             "-lambda"
-                             "-distinct"
-                             "-uniq"
-                             "-union"
-                             "-intersection"
-                             "-difference"
-                             "-powerset"
-                             "-permutations"
-                             "-inits"
-                             "-tails"
-                             "-common-prefix"
-                             "-common-suffix"
-                             "-contains?"
-                             "-contains-p"
-                             "-same-items?"
-                             "-same-items-p"
-                             "-is-prefix-p"
-                             "-is-prefix?"
-                             "-is-suffix-p"
-                             "-is-suffix?"
-                             "-is-infix-p"
-                             "-is-infix?"
-                             "-sort"
-                             "--sort"
-                             "-list"
-                             "-repeat"
-                             "-sum"
-                             "-running-sum"
-                             "-product"
-                             "-running-product"
-                             "-max"
-                             "-min"
-                             "-max-by"
-                             "--max-by"
-                             "-min-by"
-                             "--min-by"
-                             "-iterate"
-                             "--iterate"
-                             "-fix"
-                             "--fix"
-                             "-unfold"
-                             "--unfold"
-                             "-cons-pair?"
-                             "-cons-pair-p"
-                             "-cons-to-list"
-                             "-value-to-list"
-                             "-tree-mapreduce-from"
-                             "--tree-mapreduce-from"
-                             "-tree-mapreduce"
-                             "--tree-mapreduce"
-                             "-tree-map"
-                             "--tree-map"
-                             "-tree-reduce-from"
-                             "--tree-reduce-from"
-                             "-tree-reduce"
-                             "--tree-reduce"
-                             "-tree-seq"
-                             "--tree-seq"
-                             "-tree-map-nodes"
-                             "--tree-map-nodes"
-                             "-clone"
-                             "-rpartial"
-                             "-juxt"
-                             "-applify"
-                             "-on"
-                             "-flip"
-                             "-const"
-                             "-cut"
-                             "-orfn"
-                             "-andfn"
-                             "-iteratefn"
-                             "-fixfn"
-                             "-prodfn"
-                             ))
-             (special-variables '(
-                                  "it"
-                                  "it-index"
-                                  "acc"
-                                  "other"
-                                  )))
-         (font-lock-add-keywords 'emacs-lisp-mode `((,(concat "\\_<" (regexp-opt special-variables 'paren) "\\_>")
-                                                     1 font-lock-variable-name-face)) 'append)
-         (font-lock-add-keywords 'emacs-lisp-mode `((,(concat "(\\s-*" (regexp-opt new-keywords 'paren) "\\_>")
-                                                     1 font-lock-keyword-face)) 'append))
-       (--each (buffer-list)
-         (with-current-buffer it
-           (when (and (eq major-mode 'emacs-lisp-mode)
-                      (boundp 'font-lock-mode)
-                      font-lock-mode)
-             (font-lock-refresh-defaults)))))))
+;;; Font lock
+
+(defvar dash--keywords
+  `(;; TODO: Do not fontify the following automatic variables
+    ;; globally; detect and limit to their local anaphoric scope.
+    (,(concat "\\_<" (regexp-opt '("acc" "it" "it-index" "other")) "\\_>")
+     0 font-lock-variable-name-face)
+    ;; Elisp macro fontification was static prior to Emacs 25.
+    ,@(when (< emacs-major-version 25)
+        (let ((macs '("!cdr"
+                      "!cons"
+                      "-->"
+                      "--all?"
+                      "--annotate"
+                      "--any?"
+                      "--count"
+                      "--dotimes"
+                      "--doto"
+                      "--drop-while"
+                      "--each"
+                      "--each-r"
+                      "--each-r-while"
+                      "--each-while"
+                      "--filter"
+                      "--find-index"
+                      "--find-indices"
+                      "--find-last-index"
+                      "--first"
+                      "--fix"
+                      "--group-by"
+                      "--if-let"
+                      "--iterate"
+                      "--keep"
+                      "--last"
+                      "--map"
+                      "--map-first"
+                      "--map-indexed"
+                      "--map-last"
+                      "--map-when"
+                      "--mapcat"
+                      "--max-by"
+                      "--min-by"
+                      "--none?"
+                      "--only-some?"
+                      "--partition-by"
+                      "--partition-by-header"
+                      "--reduce"
+                      "--reduce-from"
+                      "--reduce-r"
+                      "--reduce-r-from"
+                      "--remove"
+                      "--remove-first"
+                      "--remove-last"
+                      "--separate"
+                      "--some"
+                      "--sort"
+                      "--splice"
+                      "--splice-list"
+                      "--split-when"
+                      "--split-with"
+                      "--take-while"
+                      "--tree-map"
+                      "--tree-map-nodes"
+                      "--tree-mapreduce"
+                      "--tree-mapreduce-from"
+                      "--tree-reduce"
+                      "--tree-reduce-from"
+                      "--tree-seq"
+                      "--unfold"
+                      "--update-at"
+                      "--when-let"
+                      "--zip-with"
+                      "->"
+                      "->>"
+                      "-as->"
+                      "-doto"
+                      "-if-let"
+                      "-if-let*"
+                      "-lambda"
+                      "-let"
+                      "-let*"
+                      "-setq"
+                      "-some-->"
+                      "-some->"
+                      "-some->>"
+                      "-split-on"
+                      "-when-let"
+                      "-when-let*")))
+          `((,(concat "(" (regexp-opt macs 'symbols)) . 1)))))
+  "Font lock keywords for `dash-fontify-mode'.")
+
+(defcustom dash-fontify-mode-lighter nil
+  "Mode line lighter for `dash-fontify-mode'.
+Either a string to display in the mode line when
+`dash-fontify-mode' is on, or nil to display
+nothing (the default)."
+  :package-version '(dash . "2.18.0")
+  :group 'dash
+  :type '(choice (string :tag "Lighter" :value " Dash")
+                 (const :tag "Nothing" nil)))
+
+;;;###autoload
+(define-minor-mode dash-fontify-mode
+  "Toggle fontification of Dash special variables.
+
+Dash-Fontify mode is a buffer-local minor mode intended for Emacs
+Lisp buffers.  Enabling it causes the special variables bound in
+anaphoric Dash macros to be fontified.  These anaphoras include
+`it', `it-index', `acc', and `other'.  In older Emacs versions
+which do not dynamically detect macros, Dash-Fontify mode
+additionally fontifies Dash macro calls.
+
+See also `dash-fontify-mode-lighter' and
+`global-dash-fontify-mode'."
+  :group 'dash :lighter dash-fontify-mode-lighter
+  (if dash-fontify-mode
+      (font-lock-add-keywords nil dash--keywords t)
+    (font-lock-remove-keywords nil dash--keywords))
+  (cond ((fboundp 'font-lock-flush) ;; Added in Emacs 25.
+         (font-lock-flush))
+        ;; `font-lock-fontify-buffer' unconditionally enables
+        ;; `font-lock-mode' and is marked `interactive-only' in later
+        ;; Emacs versions which have `font-lock-flush', so we guard
+        ;; and pacify as needed, respectively.
+        (font-lock-mode
+         (with-no-warnings
+           (font-lock-fontify-buffer)))))
+
+(defun dash--turn-on-fontify-mode ()
+  "Enable `dash-fontify-mode' if in an Emacs Lisp buffer."
+  (when (derived-mode-p #'emacs-lisp-mode)
+    (dash-fontify-mode)))
+
+;;;###autoload
+(define-globalized-minor-mode global-dash-fontify-mode
+  dash-fontify-mode dash--turn-on-fontify-mode
+  :group 'dash)
+
+(defcustom dash-enable-fontlock nil
+  "If non-nil, fontify Dash macro calls and special variables."
+  :group 'dash
+  :set (lambda (sym val)
+         (set-default sym val)
+         (global-dash-fontify-mode (if val 1 0)))
+  :type 'boolean)
+
+(make-obsolete-variable
+ 'dash-enable-fontlock #'global-dash-fontify-mode "2.18.0")
+
+(define-obsolete-function-alias
+  'dash-enable-font-lock #'global-dash-fontify-mode "2.18.0")
 
 (provide 'dash)
 ;;; dash.el ends here
