@@ -6794,10 +6794,21 @@ Check `*lsp-install*' and `*lsp-log*' buffer."
       (error
        (done nil (error-message-string err))))))
 
+(defun lsp--require-packages ()
+  "Load `lsp-client-packages' if needed."
+  (when (and lsp-auto-configure (not lsp--client-packages-required))
+    (seq-do (lambda (package)
+              ;; loading client is slow and `lsp' can be called repeatedly
+              (unless (featurep package)
+                (require package nil t)))
+            lsp-client-packages)
+    (setq lsp--client-packages-required t)))
+
 (defun lsp-install-server (update?)
   "Interactively install server.
 When prefix UPDATE? is t force installation even if the server is present."
   (interactive "P")
+  (lsp--require-packages)
   (lsp--install-server-internal
    (lsp--completing-read
     "Select server to install: "
@@ -7556,11 +7567,26 @@ such."
 
 (make-obsolete 'lsp-shutdown-workspace 'lsp-workspace-shutdown "lsp-mode 6.1")
 
+(defcustom lsp-auto-select-workspace t
+  "Shutdown or restart a single workspace.
+If set and the current buffer has only a single workspace
+associated with it, `lsp-shutdown-workspace' and
+`lsp-restart-workspace' will act on it without asking."
+  :type 'boolean
+  :group 'lsp-mode)
+
+(defun lsp--read-workspace ()
+  "Ask the user to select a workspace.
+Errors if there are none."
+  (pcase (lsp-workspaces)
+    (`nil (error "No workspaces associated with the current buffer"))
+    ((and `(,workspace) (guard lsp-auto-select-workspace)) workspace)
+    (workspaces (lsp--completing-read "Select workspace: " workspaces
+                                      #'lsp--workspace-print nil t))))
+
 (defun lsp-workspace-shutdown (workspace)
   "Shut the workspace WORKSPACE and the language server associated with it"
-  (interactive (list (lsp--completing-read "Select server: "
-                                           (lsp-workspaces)
-                                           'lsp--workspace-print nil t)))
+  (interactive (list (lsp--read-workspace)))
   (lsp--warn "Stopping %s" (lsp--workspace-print workspace))
   (with-lsp-workspace workspace (lsp--shutdown-workspace)))
 
@@ -7587,9 +7613,7 @@ such."
 
 (defun lsp-workspace-restart (workspace)
   "Restart the workspace WORKSPACE and the language server associated with it"
-  (interactive (list (lsp--completing-read "Select workspace: "
-                                           (lsp-workspaces)
-                                           'lsp--workspace-print nil t)))
+  (interactive (list (lsp--read-workspace)))
   (lsp--warn "Restarting %s" (lsp--workspace-print workspace))
   (with-lsp-workspace workspace (lsp--shutdown-workspace t)))
 
@@ -7603,13 +7627,7 @@ server if there is such. When `lsp' is called with prefix
 argument ask the user to select which language server to start."
   (interactive "P")
 
-  (when (and lsp-auto-configure (not lsp--client-packages-required))
-    (seq-do (lambda (package)
-              ;; loading client is slow and `lsp' can be called repeatedly
-              (unless (featurep package)
-                (require package nil t)))
-            lsp-client-packages)
-    (setq lsp--client-packages-required t))
+  (lsp--require-packages)
 
   (when (buffer-file-name)
     (let (clients

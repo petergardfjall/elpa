@@ -249,6 +249,13 @@ Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-icons" "lsp-icons.el" (0 0 0 0))
+;;; Generated autoloads from lsp-icons.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-icons" '("lsp-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-iedit" "lsp-iedit.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-iedit.el
 
