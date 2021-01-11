@@ -5,9 +5,9 @@
 ;; Author: Andrew Hyatt <ahyatt@gmail.com>
 ;; Homepage: https://github.com/ahyatt/emacs-websocket
 ;; Keywords: Communication, Websocket, Server
-;; Package-Version: 20201122.246
-;; Package-Commit: 36deb3ff85368d000a88435d5a645ffbab490654
-;; Version: 1.12
+;; Package-Version: 20210110.17
+;; Package-Commit: 34e11124fdd9d73e431499ba8a6b6a8023519664
+;; Version: 1.13
 ;; Package-Requires: ((cl-lib "0.5"))
 ;;
 ;; This program is free software; you can redistribute it and/or
