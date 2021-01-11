@@ -1,8 +1,8 @@
 ;;; cmake-mode.el --- major-mode for editing CMake sources
 
 ;; Package-Requires: ((emacs "24.1"))
-;; Package-Version: 20201217.1410
-;; Package-Commit: 95c59252c4116c185e898762d82b49d7a4f42445
+;; Package-Version: 20210104.1831
+;; Package-Commit: 1fb0670f4bb2bb56bff655913df5b5b38e5d500d
 
 ; Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
 ; file Copyright.txt or https://cmake.org/licensing for details.
@@ -213,7 +213,7 @@ the indentation.  Otherwise it retains the same position on the line"
       "end"
       (or "function" "macro")
       (zero-or-more space)
-      "(" (zero-or-more (not ")")) ")"))
+      "(" (zero-or-more (not-char ")")) ")"))
 
 (defun cmake-beginning-of-defun ()
   "Move backward to the beginning of a CMake function or macro.
