@@ -4,8 +4,8 @@
 
 ;; Author: Wilfred Hughes <me@wilfred.me.uk>
 ;; Version: 2.3
-;; Package-Version: 20201119.518
-;; Package-Commit: 2850301d19176b8d3bb6cc8d95af6ab7e529bd56
+;; Package-Version: 20210113.822
+;; Package-Commit: 5876209c9712bd1acbbf1d31f6e3293e5ab88971
 ;; Keywords: hash table, hash map, hash
 ;; Package-Requires: ((dash "2.12.0"))
 
@@ -116,9 +116,10 @@ for the final key, which may return any value."
   (declare (side-effect-free t))
   (inline-letevals (table keys)
     (inline-quote
-     (prog1 ,table
+     (progn
        (while ,keys
-         (setf ,table (ht-get table (pop ,keys))))))))
+         (setf ,table (ht-get ,table (pop ,keys))))
+       ,table))))
 
 (put 'ht-get* 'compiler-macro
      (lambda (_ table &rest keys)
