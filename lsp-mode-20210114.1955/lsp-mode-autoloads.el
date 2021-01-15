@@ -6,6 +6,14 @@
                          (or (file-name-directory #$) (car load-path))))
 
 
+;;;### (autoloads nil "lsp-actionscript" "lsp-actionscript.el" (0
+;;;;;;  0 0 0))
+;;; Generated autoloads from lsp-actionscript.el
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-actionscript" '("lsp-actionscript-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-ada" "lsp-ada.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-ada.el
 
