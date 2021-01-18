@@ -274,6 +274,13 @@ language server doesn't support renaming.
 
 See also `lsp-enable-symbol-highlighting'." t nil)
 
+(autoload 'lsp-evil-multiedit-highlights "lsp-iedit" "\
+Start an `evil-multiedit' operation on the documentHighlights at point.
+This can be used as a primitive `lsp-rename' replacement if the
+language server doesn't support renaming.
+
+See also `lsp-enable-symbol-highlighting'." t nil)
+
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-iedit" '("lsp-iedit--on-ranges")))
 
 ;;;***
