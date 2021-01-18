@@ -12,8 +12,8 @@
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; Package-Requires: ((emacs "25.1") (dash "20200524") (transient "20200601") (with-editor "20200522"))
-;; Package-Version: 20210102.1242
-;; Package-Commit: 25f432551347468ce97b8b03987e59092e91f8f0
+;; Package-Version: 20210115.2345
+;; Package-Commit: 86eec7ba39eb46fa1e4c2f37800d22c6dfd155c7
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
 
@@ -627,7 +627,7 @@ finally check current non-comment text."
   "Check for violations of certain basic style conventions.
 
 For each violation ask the user if she wants to proceed anyway.
-Option `git-commit-check-style-conventions' controls which
+Option `git-commit-style-convention-checks' controls which
 conventions are checked."
   (or force
       (save-excursion
