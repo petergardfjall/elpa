@@ -5,8 +5,8 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Package-Version: 20210113.314
-;; Package-Commit: efd7ea490defc53a5b78e7469a3a35d225b766cc
+;; Package-Version: 20210118.42
+;; Package-Commit: 0f2d8603662a3a868bced5f158305e609fbb6081
 ;; Version: 0.8.4
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
@@ -724,11 +724,11 @@ will be removed."
   (let ((x-gtk-resize-child-frames posframe-gtk-resize-child-frames))
     ;; More info: Don't skip empty lines when fitting mini frame to buffer (Bug#44080)
     ;; http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=e0de9f3295b4c46cb7198ec0b9634809d7b7a36d
-    (if (version< emacs-version "27.2")
-        (fit-frame-to-buffer
-         posframe height min-height width min-width)
-      (fit-frame-to-buffer-1
-       posframe height min-height width min-width nil nil nil))))
+    (if (functionp 'fit-frame-to-buffer-1)
+        (fit-frame-to-buffer-1
+         posframe height min-height width min-width nil nil nil)
+      (fit-frame-to-buffer
+       posframe height min-height width min-width))))
 
 (defun posframe--set-frame-size (posframe height min-height width min-width)
   "Set POSFRAME's size.
