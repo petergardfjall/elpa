@@ -1,4 +1,4 @@
-(define-package "treemacs" "20210114.2152" "A tree style file explorer package"
+(define-package "treemacs" "20210118.1552" "A tree style file explorer package"
   '((emacs "26.1")
     (cl-lib "0.5")
     (dash "2.11.0")
@@ -9,7 +9,7 @@
     (hydra "0.13.2")
     (ht "2.2")
     (cfrs "1.3.2"))
-  :commit "1670819786f1b82cc5c542aa7eabcf29a53074a4" :authors
+  :commit "0a69f41d0dec0790a0c3b77a88e29dd32ef8ece5" :authors
   '(("Alexander Miller" . "alexanderm@web.de"))
   :maintainer
   '("Alexander Miller" . "alexanderm@web.de")
