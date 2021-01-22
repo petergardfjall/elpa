@@ -122,7 +122,9 @@ the executable."
              cd -"))
            (buffer (get-buffer-create vterm-install-buffer-name)))
       (pop-to-buffer buffer)
-      (if (zerop (call-process "sh" nil buffer t "-c" make-commands))
+      (compilation-mode)
+      (if (zerop (let ((inhibit-read-only t))
+                   (call-process "sh" nil buffer t "-c" make-commands)))
           (message "Compilation of `emacs-libvterm' module succeeded")
         (error "Compilation of `emacs-libvterm' module failed!")))))
 
@@ -537,6 +539,14 @@ Exceptions are defined by `vterm-keymap-exceptions'."
                                  unless (member key exceptions)
                                  collect key))))
 
+(defun vterm-xterm-paste (event)
+  "Handle xterm paste EVENT in vterm."
+  (interactive "e")
+  (with-temp-buffer
+    (xterm-paste event)
+    (kill-new (buffer-string)))
+  (vterm-yank))
+
 (defvar vterm-mode-map
   (let ((map (make-sparse-keymap)))
     (vterm--exclude-keys map vterm-keymap-exceptions)
@@ -574,7 +584,7 @@ Exceptions are defined by `vterm-keymap-exceptions'."
     (define-key map [C-end]                     #'vterm--self-insert)
     (define-key map [escape]                    #'vterm--self-insert)
     (define-key map [remap yank]                #'vterm-yank)
-    (define-key map [remap xterm-paste]         #'vterm-yank)
+    (define-key map [remap xterm-paste]         #'vterm-xterm-paste)
     (define-key map [remap yank-pop]            #'vterm-yank-pop)
     (define-key map [remap mouse-yank-primary]  #'vterm-yank-primary)
     (define-key map (kbd "C-SPC")               #'vterm--self-insert)
