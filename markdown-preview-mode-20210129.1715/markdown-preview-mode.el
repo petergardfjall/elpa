@@ -101,6 +101,10 @@
 (defvar markdown-preview--home-dir (file-name-directory load-file-name)
   "`markdown-preview-mode' home directory.")
 
+(defvar markdown-preview--preview-template
+  (expand-file-name "preview.html" markdown-preview--home-dir)
+  "`markdown-preview-mode' html preview template.")
+
 (defvar markdown-preview--idle-timer nil
   "Preview idle timer.")
 
@@ -144,7 +148,7 @@
 (defun markdown-preview--read-preview-template (preview-uuid preview-file)
   "Read preview template and writes identified by PREVIEW-UUID rendered copy to PREVIEW-FILE, ready to be open in browser."
   (with-temp-file preview-file
-    (insert-file-contents (expand-file-name "preview.html" markdown-preview--home-dir))
+    (insert-file-contents markdown-preview--preview-template)
     (when (search-forward "${MD_STYLE}" nil t)
         (replace-match (markdown-preview--css) t))
     (when (search-forward "${MD_JS}" nil t)
@@ -339,7 +343,10 @@
   (remove-hook 'after-save-hook 'markdown-preview--send-preview t)
   (markdown-preview--stop-idle-timer)
   (remhash markdown-preview--uuid markdown-preview--preview-buffers)
-  (let ((preview-file (concat (file-name-directory (buffer-file-name)) markdown-preview-file-name)))
+  (let* ((preview-file-dir (if (buffer-file-name)
+                               (file-name-directory (buffer-file-name))
+                             default-directory))
+         (preview-file (concat preview-file-dir markdown-preview-file-name)))
     (if (file-exists-p preview-file)
         (delete-file preview-file))))
 
