@@ -120,7 +120,8 @@ also `dap--make-terminal-buffer'."
   :type 'list)
 
 (defcustom dap-label-output-buffer-category nil
-  "If non-nil, content that is printed to the output buffer will be labelled based on DAP protocol category."
+  "If non-nil, content that is printed to the output buffer will be labelled
+based on DAP protocol category."
   :group 'dap-mode
   :type 'boolean)
 
@@ -163,7 +164,8 @@ has been terminated."
   :group 'dap-mode)
 
 (defcustom dap-loaded-sources-changed-hook nil
-  "List of functions to be called after loaded sources have changed for the session."
+  "List of functions to be called after loaded sources have changed for
+the session."
   :type 'hook
   :group 'dap-mode)
 
@@ -188,7 +190,8 @@ g. after calling `dap-continue')"
 
 (defcustom dap-breakpoints-changed-hook nil
   "List of functions that will be called after breakpoints have changed.
-The hook will be called with the session file and the new set of breakpoint locations."
+The hook will be called with the session file and the new set of breakpoint
+locations."
   :type 'hook
   :group 'dap-mode)
 
@@ -1724,7 +1727,7 @@ normally with `dap-debug'"
               `((side . bottom) (slot . 5) (window-width . 0.20)))))
     (set-window-dedicated-p win t)
     (unless no-select (select-window win))
-    (fit-window-to-buffer nil dap-output-window-max-height dap-output-window-min-height)))
+    (fit-window-to-buffer win dap-output-window-max-height dap-output-window-min-height)))
 
 (defun dap-delete-session (debug-session)
   "Remove DEBUG-SESSION.
