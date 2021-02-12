@@ -4,7 +4,7 @@
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "26.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (spinner "1.7.3") (markdown-mode "2.3") (lv "0"))
+;; Package-Requires: ((emacs "26.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0"))
 ;; Version: 7.1.0
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
@@ -68,6 +68,7 @@
 (defvar company-backends)
 (defvar yas-inhibit-overlay-modification-protection)
 (defvar yas-indent-line)
+(defvar yas-wrap-around-region)
 (defvar yas-also-auto-indent-first-line)
 (defvar dap-auto-configure-mode)
 (defvar dap-ui-menu-items)
@@ -354,6 +355,8 @@ creating file watches."
 
 (defcustom lsp-file-watch-ignored-files
   '(
+    ;; Flycheck tempfiles
+    "[/\\\\]flycheck_[^/\\\\]+\\'"
     ;; lockfiles
     "[/\\\\]\\.#[^/\\\\]+\\'"
     ;; backup files
@@ -680,6 +683,9 @@ Changes take effect only when a new session is started."
                                         (".*\\.lua$" . "lua")
                                         (".*\\.sql$" . "sql")
                                         (".*\\.html$" . "html")
+                                        (".*/settings.json$" . "jsonc")
+                                        (".*\\.json$" . "json")
+                                        (".*\\.jsonc$" . "jsonc")
                                         (ada-mode . "ada")
                                         (sql-mode . "sql")
                                         (vimrc-mode . "vim")
@@ -1897,6 +1903,16 @@ WORKSPACE is the workspace that contains the progress token."
 
 ;; diagnostics
 
+(defvar lsp-diagnostic-filter nil
+  "A a function which will be called with
+  `&PublishDiagnosticsParams' and `workspace' which can be used
+  to filter out the diagnostics. The function should return
+  `&PublishDiagnosticsParams'.
+
+Common usecase are:
+1. Filter the diagnostics for a particular language server.
+2. Filter out the diagnostics under specific level.")
+
 (defvar lsp-diagnostic-stats (ht))
 
 (defun lsp-diagnostics (&optional current-workspace?)
@@ -1948,8 +1964,7 @@ The result format is vector [_ errors warnings infos hints] or nil."
                                           (directory-file-name path)))))
       (lsp-diagnostics--update-path path new-stats))))
 
-(lsp-defun lsp--on-diagnostics (workspace (params &as
-                                                  &PublishDiagnosticsParams :uri :diagnostics))
+(defun lsp--on-diagnostics (workspace params)
   "Callback for textDocument/publishDiagnostics.
 interface PublishDiagnosticsParams {
     uri: string;
@@ -1957,10 +1972,15 @@ interface PublishDiagnosticsParams {
 }
 PARAMS contains the diagnostics data.
 WORKSPACE is the workspace that contains the diagnostics."
+  (when lsp-diagnostic-filter
+    (setf params (funcall lsp-diagnostic-filter params workspace)))
+
   (lsp--on-diagnostics-update-stats workspace params)
-  (let* ((lsp--virtual-buffer-mappings (ht))
-         (file (lsp--fix-path-casing (lsp--uri-to-path uri)))
-         (workspace-diagnostics (lsp--workspace-diagnostics workspace)))
+
+  (-let* (((&PublishDiagnosticsParams :uri :diagnostics) params)
+          (lsp--virtual-buffer-mappings (ht))
+          (file (lsp--fix-path-casing (lsp--uri-to-path uri)))
+          (workspace-diagnostics (lsp--workspace-diagnostics workspace)))
 
     (if (seq-empty-p diagnostics)
         (remhash file workspace-diagnostics)
@@ -1980,14 +2000,6 @@ WORKSPACE is the workspace that contains the diagnostics."
   (clrhash (lsp--workspace-diagnostics workspace)))
 
 
-
-(defun lsp--ht-get (tbl &rest keys)
-  "Get nested KEYS in TBL."
-  (let ((val tbl))
-    (while (and keys val)
-      (setq val (ht-get val (cl-first keys)))
-      (setq keys (cl-rest keys)))
-    val))
 
 ;; textDocument/foldingRange support
 
@@ -3965,6 +3977,7 @@ LSP server result."
                    (buffer-substring-no-properties
                     (line-beginning-position)
                     (point))))
+         (yas-wrap-around-region nil)
          (yas-indent-line (unless keep-whitespace 'auto))
          (yas-also-auto-indent-first-line nil)
          (indent-line-function (if (or lsp-enable-relative-indentation
@@ -4389,6 +4402,13 @@ Applies on type formatting."
            cl-rest)
       (lsp-warn "Unable to calculate the languageId for current buffer. Take a look at lsp-language-id-configuration.")))
 
+(defun lsp-activate-on (&rest languages)
+  "Returns language activation function.
+The function will return t when the `lsp-buffer-language' returns
+one of the LANGUAGES."
+  (lambda (_file-name _mode)
+    (-contains? languages (lsp-buffer-language))))
+
 (defun lsp-workspace-root (&optional path)
   "Find the workspace root for the current file or PATH."
   (-when-let* ((file-name (or path (buffer-file-name)))
@@ -4788,11 +4808,12 @@ In addition, each can have property:
   "Render STR using `major-mode' corresponding to LANGUAGE.
 When language is nil render as markup if `markdown-mode' is loaded."
   (setq str (s-replace "\r" "" (or str "")))
-  (when-let ((mode (-some (-lambda ((mode . lang))
-                            (when (and (equal lang language) (functionp mode))
-                              mode))
-                          lsp-language-id-configuration)))
-    (lsp--fontlock-with-mode str mode)))
+  (if-let ((mode (-some (-lambda ((mode . lang))
+                           (when (and (equal lang language) (functionp mode))
+                             mode))
+                         lsp-language-id-configuration)))
+      (lsp--fontlock-with-mode str mode)
+    str))
 
 (defun lsp--render-element (content)
   "Render CONTENT element."
@@ -5148,8 +5169,14 @@ It will show up only if current point has signature help."
 (defun lsp--action-trigger-suggest (_command)
   "Handler for editor.action.triggerSuggest."
   (cond
-   ((and company-mode (fboundp 'company-complete))
-    (company-complete))
+   ((and company-mode
+         (fboundp 'company-auto-begin)
+         (fboundp 'company-post-command))
+    (run-at-time 0 nil
+                 (lambda ()
+                   (company-auto-begin)
+                   (let ((this-command 'company-idle-begin))
+                     (company-post-command)))))
    (t
     (completion-at-point))))
 
@@ -5665,9 +5692,9 @@ REFERENCES? t when METHOD returns references."
 
 (cl-defun lsp-find-references (&optional include-declaration &key display-action)
   "Find references of the symbol under point."
-  (interactive)
+  (interactive "P")
   (lsp-find-locations "textDocument/references"
-                      (list :context `(:includeDeclaration ,(or include-declaration json-false)))
+                      (list :context `(:includeDeclaration ,(lsp-json-bool include-declaration)))
                       :display-action display-action
                       :references? t))
 
@@ -6625,9 +6652,10 @@ returns the command to execute."
   (when (or (eq lsp-restart 'auto-restart)
             (eq (lsp--workspace-shutdown-action workspace) 'restart)
             (and (eq lsp-restart 'interactive)
-                 (let ((query (format "Server %s exited with status %s. Do you want to restart it?"
-                                      (lsp--workspace-print workspace)
-                                      (process-status (lsp--workspace-proc workspace)))))
+                 (let ((query (format
+                               "Server %s exited with status %s(check corresponding stderr buffer for details). Do you want to restart it?"
+                               (lsp--workspace-print workspace)
+                               (process-status (lsp--workspace-proc workspace)))))
                    (y-or-n-p query))))
     (--each (lsp--workspace-buffers workspace)
       (when (lsp-buffer-live-p it)
@@ -7060,7 +7088,7 @@ nil."
                (pcase decompress
                  (:gzip
                   (lsp-gunzip download-path))
-                 (:zip (lsp-unzip download-path store-path)))
+                 (:zip (lsp-unzip download-path (f-parent store-path))))
                (lsp--info "Decompressed %s..." store-path))
              (funcall callback))
          (error (funcall error-callback err)))))))
@@ -7096,7 +7124,7 @@ STORE-PATH to make it executable."
   :package-version '(lsp-mode . "7.1"))
 
 (defun lsp-unzip (zip-file dest)
-  "Get extension from URL and extract to DEST."
+  "Unzip ZIP-FILE to DEST."
   (unless lsp-unzip-script
     (error "Unable to find `unzip' or `powershell' on the path, please customize `lsp-unzip-script'"))
   (shell-command (format lsp-unzip-script zip-file dest)))
@@ -7116,7 +7144,7 @@ in place."
   :package-version '(lsp-mode . "7.1"))
 
 (defun lsp-gunzip (gz-file)
-  "Decompress file in place."
+  "Decompress GZ-FILE in place."
   (unless lsp-gunzip-script
     (error "Unable to find `gzip' on the path, please either customize `lsp-gunzip-script' or manually decompress %s" gz-file))
   (shell-command (format lsp-gunzip-script gz-file)))
