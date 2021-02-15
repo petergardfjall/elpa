@@ -192,6 +192,17 @@ toggle it if ARG is `toggle'; disable the mode otherwise.
 
 \(fn &optional ARG)" t nil)
 
+(autoload 'diff-hl-margin-local-mode "diff-hl-margin" "\
+Toggle displaying `diff-hl-mode' highlights on the margin locally.
+You probably shouldn't use this function directly.
+
+If called interactively, enable Diff-Hl-Margin-Local mode if ARG
+is positive, and disable it if ARG is zero or negative.  If
+called from Lisp, also enable the mode if ARG is omitted or nil,
+and toggle it if ARG is `toggle'; disable the mode otherwise.
+
+\(fn &optional ARG)" t nil)
+
 (if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-margin" '("diff-hl-")))
 
 ;;;***
