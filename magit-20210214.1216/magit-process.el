@@ -171,11 +171,12 @@ itself from the hook, to avoid further futile attempts."
     "Please enter the passphrase for the ssh key"
     "Please enter the passphrase to unlock the OpenPGP secret key"
     "^.*'s password: ?$"
+    "^Token: $" ; For git-credential-manager-core (#4318).
     "^Yubikey for .*: ?$"
     "^Enter PIN for .*: ?$")
   "List of regexps matching password prompts of Git and its subprocesses.
 Also see `magit-process-find-password-functions'."
-  :package-version '(magit . "2.8.0")
+  :package-version '(magit . "3.0.0")
   :group 'magit-process
   :type '(repeat (regexp)))
 
@@ -580,7 +581,7 @@ Magit status buffer."
     (process-put process 'section section)
     (process-put process 'command-buf (current-buffer))
     (process-put process 'default-dir default-directory)
-    (when inhibit-magit-refresh
+    (when magit-inhibit-refresh
       (process-put process 'inhibit-refresh t))
     (oset section process process)
     (with-current-buffer process-buf
@@ -805,6 +806,19 @@ or iff that is undefined, for backward compatibility
          (if (functionp secret)
              (funcall secret)
            secret))))
+
+(defun magit-process-git-credential-manager-core (process string)
+  "Authenticate using `git-credential-manager-core'.
+
+To use this function add it to the appropriate hook
+  (add-hook 'magit-process-prompt-functions
+            'magit-process-git-credential-manager-core)"
+  (and (string-match "^option (enter for default): $" string)
+       (progn
+         (magit-process-buffer)
+         (process-send-string
+          process
+          (format "%c" (read-char-choice "Option: " '(?\r ?\j ?1 ?2)))))))
 
 (defun magit-process-password-prompt (process string)
   "Find a password based on prompt STRING and send it to git.
