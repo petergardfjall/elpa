@@ -1,6 +1,7 @@
-(define-package "web-server" "20201217.1252" "Emacs Web Server"
-  '((emacs "24.3"))
-  :commit "4d865cc4720f668aed7a8c3bcfddfbf534ecfb67" :authors
+(define-package "web-server" "20210209.58" "Emacs Web Server"
+  '((emacs "24.1")
+    (cl-lib "0.6"))
+  :commit "3aa5084bcb733aa77997b9210b4437903f6f29ce" :authors
   '(("Eric Schulte" . "schulte.eric@gmail.com"))
   :maintainer
   '("Eric Schulte" . "schulte.eric@gmail.com")
