@@ -2,8 +2,8 @@
 
 ;; Copyright (c) 2013 Spotify AB
 ;; Package-Requires: ((emacs "24"))
-;; Package-Version: 20210106.235
-;; Package-Commit: 58b7380189de21496235382900838aa0db2dcf92
+;; Package-Version: 20210213.2118
+;; Package-Commit: 27a9f4d2f3cfcc4188955f27d1945850d850aed1
 ;; Homepage: https://github.com/spotify/dockerfile-mode
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -59,6 +59,15 @@
 Each element of the list will be passed as a separate
  --build-arg to the docker build command."
   :type '(repeat string)
+  :group 'dockerfile)
+
+(defcustom dockerfile-use-buildkit nil
+  "If t use Docker buildkit for building images
+
+This is the new buildsystem for docker, and in time it will replace the old one
+but for now it has to be explicitly enabled to work.
+It is supported from docker 18.09"
+  :type 'boolean
   :group 'dockerfile)
 
 (defface dockerfile-image-name
@@ -178,7 +187,8 @@ The build string will be of the format:
   (save-buffer)
     (compilation-start
         (format
-            "%s%s build %s %s %s -f %s %s"
+            "%s%s%s build %s %s %s -f %s %s"
+            (if dockerfile-use-buildkit "DOCKER_BUILDKIT=1 " "")
             (if dockerfile-use-sudo "sudo " "")
             dockerfile-mode-command
             (if no-cache "--no-cache" "")
