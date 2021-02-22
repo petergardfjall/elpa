@@ -2,8 +2,8 @@
 
 ;; Copyright (c) 2013 Spotify AB
 ;; Package-Requires: ((emacs "24"))
-;; Package-Version: 20210215.1633
-;; Package-Commit: b01f2ecdb6ce981e07e5caa4ec712904071ea26a
+;; Package-Version: 20210218.1746
+;; Package-Commit: ed1d04c89cd8b53963f2dcae7cb3a46967e0abbf
 ;; Homepage: https://github.com/spotify/dockerfile-mode
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -243,7 +243,10 @@ returned, otherwise the base image name is used."
   (set (make-local-variable 'indent-line-function) #'dockerfile-indent-line-function))
 
 ;;;###autoload
-(add-to-list 'auto-mode-alist '("Dockerfile\\(?:\\..*\\)?\\'" . dockerfile-mode))
+(add-to-list 'auto-mode-alist '("/Dockerfile\\(?:\\..*\\)?\\'" . dockerfile-mode))
+
+;;;###autoload
+(add-to-list 'auto-mode-alist '("\\.dockerfile\\'" . dockerfile-mode))
 
 (provide 'dockerfile-mode)
 
