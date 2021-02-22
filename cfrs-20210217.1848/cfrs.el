@@ -4,9 +4,9 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "26.1") (dash "2.11.0") (s "1.10.0") (posframe "0.6.0"))
-;; Package-Commit: fdcb5031ca364770475fc432b36599b7d34be502
-;; Package-Version: 20210121.2007
-;; Package-X-Original-Version: 1.5.3
+;; Package-Commit: 7c42f2c82c7ae689f3ef291b066688c58ab96298
+;; Package-Version: 20210217.1848
+;; Package-X-Original-Version: 1.5.4
 ;; Homepage: https://github.com/Alexander-Miller/cfrs
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -132,6 +132,10 @@ Only the `:background' part is used."
   "Simple mode for buffers displayed in cfrs's input frames."
   (add-hook 'post-command-hook #'cfrs--adjust-height nil :local)
   (display-line-numbers-mode -1))
+
+;; https://github.com/Alexander-Miller/treemacs/issues/775
+(with-eval-after-load 'beacon
+  (add-to-list 'beacon-dont-blink-major-modes 'cfrs-input-mode))
 
 (provide 'cfrs)
 
