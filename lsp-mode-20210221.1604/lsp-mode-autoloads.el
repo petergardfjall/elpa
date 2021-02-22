@@ -132,6 +132,33 @@ toggle it if ARG is `toggle'; disable the mode otherwise.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-dired" "lsp-dired.el" (0 0 0 0))
+;;; Generated autoloads from lsp-dired.el
+
+(defvar lsp-dired-mode nil "\
+Non-nil if Lsp-Dired mode is enabled.
+See the `lsp-dired-mode' command
+for a description of this minor mode.
+Setting this variable directly does not take effect;
+either customize it (see the info node `Easy Customization')
+or call the function `lsp-dired-mode'.")
+
+(custom-autoload 'lsp-dired-mode "lsp-dired" nil)
+
+(autoload 'lsp-dired-mode "lsp-dired" "\
+Display `lsp-mode' icons for each file in a dired buffer.
+
+If called interactively, enable Lsp-Dired mode if ARG is
+positive, and disable it if ARG is zero or negative.  If called
+from Lisp, also enable the mode if ARG is omitted or nil, and
+toggle it if ARG is `toggle'; disable the mode otherwise.
+
+\(fn &optional ARG)" t nil)
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-dired" '("lsp-dired-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-dockerfile" "lsp-dockerfile.el" (0 0 0
 ;;;;;;  0))
 ;;; Generated autoloads from lsp-dockerfile.el
