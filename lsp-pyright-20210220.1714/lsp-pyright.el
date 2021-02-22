@@ -4,9 +4,9 @@
 
 ;; Author: Arif Rezai, Vincent Zhang, Andrew Christianson
 ;; Version: 0.2.0
-;; Package-Version: 20201014.1620
-;; Package-Commit: d9e7d3cf1bdc8ee0395c8df4408b05ee3ba9c22a
-;; Package-Requires: ((emacs "26.1") (lsp-mode "7.0") (dash "2.14.1") (ht "2.0"))
+;; Package-Version: 20210220.1714
+;; Package-Commit: 65fb14128127fb1ddf68dd4cb3140d6c7911a093
+;; Package-Requires: ((emacs "26.1") (lsp-mode "7.0") (dash "2.18.0") (ht "2.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-pyright
 ;; Keywords: languages, tools, lsp
 
@@ -97,7 +97,8 @@ This can be overridden in the configuration file."
 
 (defcustom lsp-pyright-auto-search-paths t
   "Determines whether pyright automatically adds common search paths.
-i.e: Paths like \"src\" if there are no execution environments defined in the config file."
+i.e: Paths like \"src\" if there are no execution environments defined in the
+config file."
   :type 'boolean
   :group 'lsp-pyright)
 
@@ -162,9 +163,10 @@ Only available in Emacs 27 and above."
 (defun lsp-pyright-locate-python ()
   "Look for python executable cmd to the workspace."
   (or (executable-find (f-expand "bin/python" (lsp-pyright-locate-venv)))
-      (if (>= emacs-major-version 27)
-          (executable-find lsp-pyright-python-executable-cmd lsp-pyright-prefer-remote-env)
-        (executable-find lsp-pyright-python-executable-cmd))))
+      (with-no-warnings
+        (if (>= emacs-major-version 27)
+            (executable-find lsp-pyright-python-executable-cmd lsp-pyright-prefer-remote-env)
+          (executable-find lsp-pyright-python-executable-cmd)))))
 
 (defun lsp-pyright--begin-progress-callback (workspace &rest _)
   "Log begin progress information.
@@ -172,7 +174,7 @@ Current LSP WORKSPACE should be passed in."
   (when lsp-progress-via-spinner
     (with-lsp-workspace workspace
       (--each (lsp--workspace-buffers workspace)
-	(when (buffer-live-p it)
+    (when (buffer-live-p it)
           (with-current-buffer it
             (lsp--spinner-start)))))
     )
@@ -190,7 +192,7 @@ Current LSP WORKSPACE should be passed in."
   (when lsp-progress-via-spinner
     (with-lsp-workspace workspace
       (--each (lsp--workspace-buffers workspace)
-	(when (buffer-live-p it)
+    (when (buffer-live-p it)
           (with-current-buffer it
             (lsp--spinner-stop)))))
     )
