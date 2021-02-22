@@ -940,7 +940,11 @@ on.
 This command is only intended for interactive use and should only
 be used on highly rearranged and unpublished history.
 
-\(fn REV)" t nil)
+If KEYID is non-nil, then use that to sign all reshelved commits.
+Interactively use the value of the \"--gpg-sign\" option in the
+list returned by `magit-rebase-arguments'.
+
+\(fn REV KEYID)" t nil)
 
 (autoload 'magit-pop-revision-stack "magit-extras" "\
 Insert a representation of a revision into the current buffer.
