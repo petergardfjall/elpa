@@ -291,6 +291,19 @@ Narrow to the symbol range on breadcrumb at SYMBOL-POSITION.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-ido" "lsp-ido.el" (0 0 0 0))
+;;; Generated autoloads from lsp-ido.el
+
+(autoload 'lsp-ido-workspace-symbol "lsp-ido" "\
+`ido' for lsp workspace/symbol.
+When called with prefix ARG the default selection will be symbol at point.
+
+\(fn ARG)" t nil)
+
+(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "lsp-ido" '("lsp-ido-")))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-iedit" "lsp-iedit.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-iedit.el
 
