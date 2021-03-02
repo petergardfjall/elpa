@@ -1,13 +1,14 @@
-;;; ivy-rich.el --- More friendly display transformer for ivy. -*- lexical-binding: t; -*-
+;;; ivy-rich.el --- More friendly display transformer for ivy -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016 Yevgnen Koh
 
 ;; Author: Yevgnen Koh <wherejoystarts@gmail.com>
-;; Package-Requires: ((emacs "24.5") (ivy "0.8.0"))
-;; Package-Version: 0.1.6
-;; Package-Commit: 840e13314774a40b69f10f0a15ce1d6af4187b12
+;; Homepage: https://github.com/Yevgnen/ivy-rich
+;; Package-Requires: ((emacs "25.1") (ivy "0.13.0"))
+;; Package-Version: 20210212.1441
+;; Package-Commit: 7b9b7b20c3ead81da90232cd6707dfad3c1f1eb3
 ;; Version: 0.1.6
-;; Keywords: ivy
+;; Keywords: convenience, ivy
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -16,7 +17,7 @@
 
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
@@ -37,9 +38,14 @@
 (require 'ivy)
 (require 'subr-x)
 
-(declare-function projectile-project-name "projectile")
-(declare-function projectile-project-p "projectile")
-(declare-function projectile-project-root "projectile")
+(eval-when-compile
+  (require 'package)
+  (require 'bookmark)
+  (require 'project))
+
+(declare-function projectile-project-name "ext:projectile")
+(declare-function projectile-project-p "ext:projectile")
+(declare-function projectile-project-root "ext:projectile")
 
 (defgroup ivy-rich nil
   "More friendly interface (display transformer) for ivy."
@@ -48,11 +54,11 @@
 (defcustom ivy-rich-display-transformers-list
   '(ivy-switch-buffer
     (:columns
-     ((ivy-rich-candidate (:width 30))
+     ((ivy-switch-buffer-transformer (:width 0.35))
       (ivy-rich-switch-buffer-size (:width 7))
       (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right))
       (ivy-rich-switch-buffer-major-mode (:width 12 :face warning))
-      (ivy-rich-switch-buffer-project (:width 15 :face success))
+      (ivy-rich-switch-buffer-project (:width 0.18 :face success))
       (ivy-rich-switch-buffer-path (:width (lambda (x) (ivy-rich-switch-buffer-shorten-path x (ivy-rich-minibuffer-width 0.3))))))
      :predicate
      (lambda (cand) (get-buffer cand)))
@@ -62,20 +68,24 @@
       (ivy-rich-counsel-find-file-truename (:face font-lock-doc-face))))
     counsel-M-x
     (:columns
-     ((counsel-M-x-transformer (:width 40))
+     ((counsel-M-x-transformer (:width 0.4))
       (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))
     counsel-describe-function
     (:columns
-     ((counsel-describe-function-transformer (:width 40))
+     ((counsel-describe-function-transformer (:width 0.4))
       (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))
     counsel-describe-variable
     (:columns
-     ((counsel-describe-variable-transformer (:width 40))
+     ((counsel-describe-variable-transformer (:width 0.4))
       (ivy-rich-counsel-variable-docstring (:face font-lock-doc-face))))
     counsel-recentf
     (:columns
      ((ivy-rich-candidate (:width 0.8))
       (ivy-rich-file-last-modified-time (:face font-lock-comment-face))))
+    counsel-bookmark
+    (:columns ((ivy-rich-candidate (:width 0.3))
+               (ivy-rich-bookmark-type)
+               (ivy-rich-bookmark-info)))
     package-install
     (:columns
      ((ivy-rich-candidate (:width 30))
@@ -138,8 +148,8 @@ counsel-M-x
  ((counsel-M-x-transformer (:width 40))
   (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))
 
-execute-extended-command                ; reuse transformer built
-ivy-rich--counsel-M-x-transformer       ; for `counsel-M-x'
+execute-extended-command		; reuse transformer built
+ivy-rich--counsel-M-x-transformer	; for `counsel-M-x'
 ...)
 
 `execute-extended-command' is set to used `counsel-M-x''s
@@ -148,11 +158,47 @@ without duplicating definitions.
 
 Note that you may need to disable and enable the `ivy-rich-mode'
 again to make this variable take effect.")
-(define-obsolete-variable-alias
-  'ivy-rich--display-transformers-list
-  'ivy-rich-display-transformers-list
-  "0.1.2"
-  "Used `ivy-rich-display-transformers-list' instead.")
+
+;;; User convenience functions
+;; Helper functions for user profile configuration
+
+(defun ivy-rich-modify-column (cmd column attrs)
+  "Customize the CMD transformer's properties for a specific COLUMN.
+Each key-value pair in ATTRS is put into the property list for the column.
+Existing properties for the column are left unchanged.
+
+Usage:
+
+(ivy-rich-modify-column 'ivy-switch-buffer
+                        'ivy-rich-switch-buffer-major-mode
+                        '(:width 20 :face error))"
+  (if (cl-evenp (length attrs))
+      (let* ((trans (plist-get ivy-rich-display-transformers-list cmd))
+             (props (cadr (assoc column (plist-get trans :columns)))))
+        (while attrs
+          (plist-put props (pop attrs) (pop attrs))))
+    (error "Column key-value attributes must be in pairs")))
+
+(defun ivy-rich-modify-columns (cmd column-list)
+  "Customize the CMD transformer's properties for a COLUMN-LIST.
+This is a convenience function that calls `ivy-rich-modify-column' for each item
+in COLUMN-LIST, allowing multiple columns to be modified for a transformer.
+Each item in COLUMN-LIST is a two-item list comprised of a column and list
+of attribute key-value pairs.
+
+Usage:
+
+(ivy-rich-modify-columns
+ 'ivy-switch-buffer
+ '((ivy-rich-switch-buffer-size (:align right))
+   (ivy-rich-switch-buffer-major-mode (:width 20 :face error))))"
+  (while column-list
+    (if-let ((column (caar column-list))
+             (attrs (cadar column-list)))
+        (prog1
+            (ivy-rich-modify-column cmd column attrs)
+          (setq column-list (cdr column-list)))
+      (error "Column/attributes are incorrectly specified"))))
 
 ;; Common Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defalias 'ivy-rich-candidate 'identity)
@@ -161,18 +207,18 @@ again to make this variable take effect.")
   (or (null str)
       (string-empty-p (string-trim str))))
 
-(defun ivy-rich-normalize-width (str len &optional left)
+(defun ivy-rich-normalize-width (str len &optional right-aligned)
   "Normalize the width of a string.
 
-If the length of STR is smaller than LEN, the string is padded
-using spaces from right if LEFT is nil or from left if left is
-not nil.
+If the length of STR is smaller than LEN, the string is padded to
+right aligned if RIGHT-ALIGNED is not nil and is padded to left
+otherwise.
 
 If the lenght of STR is larger that LEN, the string is truncated
 using …."
   (let ((str-len (string-width str)))
     (cond ((< str-len len)
-           (if left
+           (if right-aligned
                (concat (make-string (- len str-len) ? ) str)
              (concat str (make-string (- len str-len) ? ))))
           ((<= len (- str-len)) "")
@@ -248,7 +294,7 @@ or /a/…/d/e/f.el
 or /a/…/e/f.el
 or /a/…/f.el."
   (if (> (length file) len)
-      (let ((new-file (replace-regexp-in-string "\\/?.+?\\/\\(\\(…\\/\\)?.+?\\)\\/.*" "…" file nil nil 1)))
+      (let ((new-file (replace-regexp-in-string "/?.+?/\\(\\(…/\\)?.+?\\)/.*" "…" file nil nil 1)))
         (if (string= new-file file)
             file
           (ivy-rich-switch-buffer-shorten-path new-file len)))
@@ -305,25 +351,72 @@ or /a/…/f.el."
      (symbol-name (ivy-rich--local-values candidate 'major-mode))))))
 
 (defun ivy-rich--switch-buffer-directory (candidate)
-  (or (ivy-rich--local-values candidate 'default-directory)
-      (ivy-rich--local-values candidate 'list-buffers-directory)))
+      "Return directory of file visited by buffer named CANDIDATE, or nil if no file."
+      (let* ((buffer (get-buffer candidate))
+             (fn (buffer-file-name buffer)))
+        ;; if valid filename, i.e. buffer visiting file:
+        (if fn
+            ;; return containing directory
+            (directory-file-name fn)
+          ;; else if mode explicitly offering list-buffers-directory, return that; else nil.
+          ;; buffers that don't explicitly visit files, but would like to show a filename,
+          ;; e.g. magit or dired, set the list-buffers-directory variable
+          (buffer-local-value 'list-buffers-directory buffer))))
 
-(defun ivy-rich-switch-buffer-root (candidate)
-  (let* ((dir (ivy-rich--switch-buffer-directory candidate)))
-    (unless (or (and (file-remote-p dir)
+(defvar ivy-rich--project-root-cache
+  (make-hash-table :test 'equal)
+  "Hash-table caching each file's project for
+`ivy-rich-switch-buffer-root'.
+
+The cache can is enabled when `ivy-rich-project-root-cache-mode'
+is enabled and cleared when the mode is disabled. Additionally,
+buffers are removed from the cached when killd.
+
+The cache can be cleared manually by calling
+`ivy-rich-clear-project-root-cache'.")
+
+(defun ivy-rich-clear-project-root-cache ()
+  "Resets `ivy-rich--project-root-cache'."
+  (interactive)
+  (clrhash ivy-rich--project-root-cache))
+
+(defun ivy-rich-switch-buffer-root-lookup (candidate dir)
+  (unless (or (and (file-remote-p dir)
                      (not ivy-rich-parse-remote-buffer))
                 ;; Workaround for `browse-url-emacs' buffers , it changes
                 ;; `default-directory' to "http://" (#25)
-                (string-match "https?:\\/\\/" dir))
+                (string-match "https?://" dir))
       (cond ((bound-and-true-p projectile-mode)
              (let ((project (or (ivy-rich--local-values
                                  candidate 'projectile-project-root)
                                 (projectile-project-root dir))))
                (unless (string= project "-")
                  project)))
+            ((require 'find-file-in-project nil t)
+             (let ((default-directory dir))
+               (ffip-project-root)))
             ((require 'project nil t)
              (when-let ((project (project-current nil dir)))
-               (car (project-roots project))))))))
+               (car (project-roots project)))))))
+
+(defun ivy-rich-switch-buffer-root (candidate)
+  (when-let ((dir (ivy-rich--switch-buffer-directory candidate)))
+    (let ((cached-value (if ivy-rich-project-root-cache-mode
+                            (gethash dir ivy-rich--project-root-cache 'not-found)
+                          'not-found)))
+      (if (not (eq cached-value 'not-found))
+          cached-value
+        (let ((value (ivy-rich-switch-buffer-root-lookup candidate dir)))
+          (when ivy-rich-project-root-cache-mode
+            (puthash dir value ivy-rich--project-root-cache))
+          value)))))
+
+(defun ivy-rich-project-root-cache-kill-buffer-hook ()
+  "This hook is used to remove buffer from
+`ivy-rich--project-root-cache' when they are killed."
+  (remhash (ivy-rich--switch-buffer-directory
+            (buffer-name (current-buffer)))
+           ivy-rich--project-root-cache))
 
 (defun ivy-rich-switch-buffer-project (candidate)
   (file-name-nondirectory
@@ -355,7 +448,7 @@ or /a/…/f.el."
           (abbreviate-file-name (or filename root)))
          ;; Case: relative
          ((or (eq ivy-rich-path-style 'relative)
-              t)            ; make 'relative default
+              t)	    ; make 'relative default
           (if (and filename root)
               (let ((relative-path (string-remove-prefix root filename)))
                 (if (string= relative-path candidate)
@@ -369,17 +462,27 @@ or /a/…/f.el."
 
 ;; Supports for `counsel-find-file'
 (defun ivy-rich-counsel-find-file-truename (candidate)
-  (let ((type (car (file-attributes (directory-file-name (expand-file-name candidate ivy--directory))))))
+  (let ((type (car (ignore-errors (file-attributes (directory-file-name (expand-file-name candidate ivy--directory)))))))
     (if (stringp type)
         (concat "-> " (expand-file-name type ivy--directory))
       "")))
 
 ;; Supports for `counsel-M-x', `counsel-describe-function', `counsel-describe-variable'
 (defun ivy-rich-counsel-function-docstring (candidate)
-  (let ((doc (replace-regexp-in-string
-              ":\\(\\(before\\|after\\)\\(-\\(while\\|until\\)\\)?\\|around\\|override\\|\\(filter-\\(args\\|return\\)\\)\\) advice:[ ]*‘.+?’[\r\n]+"
-              ""
-              (or (ignore-errors (documentation (intern-soft candidate))) ""))))
+  (let* (
+         ;; Stole from:
+         ;; https://github.com/minad/marginalia/blob/51f750994aaa0b6798d97366acfb0d397639af66/marginalia.el#L355
+         (regex (rx bos
+                    (1+ (seq (? "This function has ")
+                             (or ":before" ":after" ":around" ":override"
+                                 ":before-while" ":before-until" ":after-while"
+                                 ":after-until" ":filter-args" ":filter-return")
+                             " advice: " (0+ nonl) "\n"))
+                    "\n"))
+         (doc (replace-regexp-in-string
+               regex
+               ""
+               (or (ignore-errors (documentation (intern-soft candidate))) ""))))
     (if (string-match "^\\(.+\\)\\([\r\n]\\)?" doc)
         (setq doc (match-string 1 doc))
       "")))
@@ -408,10 +511,10 @@ or /a/…/f.el."
 (defun ivy-rich-bookmark-handler-props (candidate)
   (let ((handler (ivy-rich-bookmark-value candidate 'handler)))
     (unless (null handler)
-      (list (upcase (car (remove-if (lambda (x)
-                                      (or (string= "bookmark" x)
-                                          (string= "jump" x)))
-                                    (split-string (symbol-name handler) "-"))))
+      (list (upcase (car (cl-remove-if (lambda (x)
+                                         (or (string= "bookmark" x)
+                                             (string= "jump" x)))
+                                       (split-string (symbol-name handler) "-"))))
             'font-lock-keyword-face))))
 
 (defun ivy-rich-bookmark-propertize-type (string face)
@@ -420,13 +523,13 @@ or /a/…/f.el."
 (defun ivy-rich-bookmark-type (candidate)
   (let ((filename (ivy-rich-bookmark-filename candidate)))
     (apply #'ivy-rich-bookmark-propertize-type
-	   (cond ((null filename) (or (ivy-rich-bookmark-handler-props candidate)
-				      '("NOFILE" warning)))
-		 ((file-remote-p filename) '("REMOTE" mode-line-buffer-id))
-		 ((not (file-exists-p filename)) (or (ivy-rich-bookmark-handler-props candidate)
-						     '("NOTFOUND" error)))
-		 ((file-directory-p filename) '("DIRED" warning))
-		 (t '("FILE" success))))))
+           (cond ((null filename) (or (ivy-rich-bookmark-handler-props candidate)
+                                      '("NOFILE" warning)))
+                 ((file-remote-p filename) '("REMOTE" mode-line-buffer-id))
+                 ((not (file-exists-p filename)) (or (ivy-rich-bookmark-handler-props candidate)
+                                                     '("NOTFOUND" error)))
+                 ((file-directory-p filename) '("DIRED" warning))
+                 (t '("FILE" success))))))
 
 (defun ivy-rich-bookmark-info (candidate)
   (let ((filename (ivy-rich-bookmark-filename candidate)))
@@ -443,23 +546,23 @@ or /a/…/f.el."
 ;; Possible setup:
 ;; counsel-projectile-switch-project
 ;; (:columns
-;;  ((ivy-rich-counsel-projectile-switch-project-project-name (:width 20 :face success))
+;;  ((ivy-rich-counsel-projectile-switch-project-project-name (:width 30 :face success))
 ;;   (ivy-rich-candidate)))
 (defun ivy-rich-counsel-projectile-switch-project-project-name (candidate)
   (or (projectile-project-name candidate) ""))
 
 ;; Supports for `package-install'
 (defun ivy-rich-package-install-summary (candidate)
-    (let ((package-desc (cadr (assoc-string candidate package-archive-contents))))
-      (if package-desc (package-desc-summary package-desc) "")))
+  (let ((package-desc (cadr (assoc-string candidate package-archive-contents))))
+    (if package-desc (package-desc-summary package-desc) "")))
 
 (defun ivy-rich-package-archive-summary (candidate)
-    (let ((package-arch (cadr (assoc-string candidate package-archive-contents))))
-      (if package-arch (package-desc-archive package-arch) "")))
+  (let ((package-arch (cadr (assoc-string candidate package-archive-contents))))
+    (if package-arch (package-desc-archive package-arch) "")))
 
 (defun ivy-rich-package-version (candidate)
-    (let ((package-vers (cadr (assoc-string candidate package-archive-contents))))
-      (if package-vers (package-version-join (package-desc-version package-vers)) "")))
+  (let ((package-vers (cadr (assoc-string candidate package-archive-contents))))
+    (if package-vers (package-version-join (package-desc-version package-vers)) "")))
 
 ;; Definition of `ivy-rich-mode' ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar ivy-rich--original-display-transformers-list nil)  ; Backup list
@@ -476,7 +579,7 @@ or /a/…/f.el."
           (setq formated (funcall width formated))
         (if (floatp width)
             (setq width (floor (* (window-width (minibuffer-window)) width))))
-        (setq formated (ivy-rich-normalize-width formated width (eq align 'left)))))
+        (setq formated (ivy-rich-normalize-width formated width (eq align 'right)))))
     (if face
         (setq formated (propertize formated 'face face)))
     formated))
@@ -492,13 +595,13 @@ or /a/…/f.el."
   (setq ivy-rich--original-display-transformers-list
         (plist-put ivy-rich--original-display-transformers-list
                    cmd
-                   (plist-get ivy--display-transformers-list cmd))))
+                   (alist-get cmd ivy--display-transformers-alist))))
 
 (defun ivy-rich-restore-transformer (cmd)
-  (setq ivy--display-transformers-list
-        (plist-put ivy--display-transformers-list
-                   cmd
-                   (plist-get ivy-rich--original-display-transformers-list cmd))))
+  (setq ivy--display-transformers-alist
+        (ivy--alist-set 'ivy--display-transformers-alist
+                        cmd
+                        (plist-get ivy-rich--original-display-transformers-list cmd))))
 
 (defun ivy-rich-build-transformer (cmd transformer-props)
   (if (functionp transformer-props)
@@ -506,7 +609,7 @@ or /a/…/f.el."
     (defalias (intern (format "ivy-rich--%s-transformer" (symbol-name cmd)))
       (lambda  (candidate)
         (let ((columns (plist-get transformer-props :columns))
-              (predicate-fn (or (plist-get transformer-props :predicate) (lambda (x) t)))
+              (predicate-fn (or (plist-get transformer-props :predicate) (lambda (_) t)))
               (delimiter (or (plist-get transformer-props :delimiter) " ")))
           (if (and predicate-fn
                    (not (funcall predicate-fn candidate)))
@@ -524,9 +627,16 @@ or /a/…/f.el."
              (ivy-set-display-transformer cmd (ivy-rich-build-transformer cmd transformer-props)))))
 
 (defun ivy-rich-unset-display-transformer ()
-  (cl-loop for (cmd transformer-fn) on ivy-rich--original-display-transformers-list by 'cddr do
+  (cl-loop for (cmd _transformer-fn) on ivy-rich--original-display-transformers-list by 'cddr do
            (ivy-rich-restore-transformer cmd))
   (setq ivy-rich--original-display-transformers-list nil))
+
+(defun ivy-rich-setup-project-root-cache-mode ()
+  (add-hook 'kill-buffer-hook 'ivy-rich-project-root-cache-kill-buffer-hook))
+
+(defun ivy-rich-cleanup-project-root-cache-mode ()
+  (ivy-rich-clear-project-root-cache)
+  (remove-hook 'kill-buffer-hook 'ivy-rich-project-root-cache-kill-buffer-hook))
 
 ;;;###autoload
 (define-minor-mode ivy-rich-mode
@@ -543,6 +653,18 @@ or /a/…/f.el."
     (ivy-rich-mode -1)
     (ivy-rich-mode 1)))
 
+;;;###autoload
+(define-minor-mode ivy-rich-project-root-cache-mode
+  "Toggle ivy-rich-root-cache-mode globally."
+  :global t
+  (if ivy-rich-project-root-cache-mode
+      (ivy-rich-setup-project-root-cache-mode)
+    (ivy-rich-cleanup-project-root-cache-mode)))
+
 (provide 'ivy-rich)
 
 ;;; ivy-rich.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; End:
