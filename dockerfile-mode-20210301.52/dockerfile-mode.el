@@ -2,8 +2,8 @@
 
 ;; Copyright (c) 2013 Spotify AB
 ;; Package-Requires: ((emacs "24"))
-;; Package-Version: 20210218.1746
-;; Package-Commit: ed1d04c89cd8b53963f2dcae7cb3a46967e0abbf
+;; Package-Version: 20210301.52
+;; Package-Commit: 07dde72b0e356d772fb65b969bd6decfa166e4d7
 ;; Homepage: https://github.com/spotify/dockerfile-mode
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -44,7 +44,7 @@
   :group 'dockerfile)
 
 (defcustom dockerfile-mode-command "docker"
-  "Which binary to use to build images"
+  "Which binary to use to build images."
   :group 'dockerfile
   :type 'string)
 
@@ -62,7 +62,7 @@ Each element of the list will be passed as a separate
   :group 'dockerfile)
 
 (defcustom dockerfile-use-buildkit nil
-  "If t use Docker buildkit for building images
+  "Use Docker buildkit for building images?
 
 This is the new buildsystem for docker, and in time it will replace the old one
 but for now it has to be explicitly enabled to work.
@@ -167,10 +167,11 @@ file name.  Otherwise, uses Emacs' standard conversion function."
   "Return a --tag shell-quoted IMAGE-NAME string or an empty string if image-name is blank."
     (if (string= image-name "") "" (format "--tag %s " (shell-quote-argument image-name))))
 
+(define-obsolete-variable-alias 'docker-image-name 'dockerfile-image-name "2017-10-22")
+
 (defvar dockerfile-image-name nil
   "Name of the dockerfile currently being used.
 This can be set in file or directory-local variables.")
-(define-obsolete-variable-alias 'docker-image-name 'dockerfile-image-name "2017-10-22")
 
 (defvar dockerfile-image-name-history nil
   "History of image names read by `dockerfile-read-image-name'.")
@@ -243,7 +244,8 @@ returned, otherwise the base image name is used."
   (set (make-local-variable 'indent-line-function) #'dockerfile-indent-line-function))
 
 ;;;###autoload
-(add-to-list 'auto-mode-alist '("/Dockerfile\\(?:\\..*\\)?\\'" . dockerfile-mode))
+(add-to-list 'auto-mode-alist '("/Dockerfile\\(?:\\.[^/\\]*\\)?\\'" .
+                                dockerfile-mode))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.dockerfile\\'" . dockerfile-mode))
