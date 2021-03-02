@@ -295,7 +295,7 @@ changes.
 
 \(git checkout REVISION).
 
-\(fn REVISION)" t nil)
+\(fn REVISION &optional ARGS)" t nil)
 
 (autoload 'magit-branch-create "magit-branch" "\
 Create BRANCH at branch or revision START-POINT.
@@ -305,7 +305,7 @@ Create BRANCH at branch or revision START-POINT.
 (autoload 'magit-branch-and-checkout "magit-branch" "\
 Create and checkout BRANCH at branch or revision START-POINT.
 
-\(fn BRANCH START-POINT)" t nil)
+\(fn BRANCH START-POINT &optional ARGS)" t nil)
 
 (autoload 'magit-branch-or-checkout "magit-branch" "\
 Hybrid between `magit-checkout' and `magit-branch-and-checkout'.
@@ -1145,8 +1145,8 @@ repository.  Also stage the file.
 \(fn RULE)" t nil)
 
 (autoload 'magit-gitignore-in-subdir "magit-gitignore" "\
-Add the Git ignore RULE to a \".gitignore\" file.
-Prompted the user for a directory and add the rule to the
+Add the Git ignore RULE to a \".gitignore\" file in DIRECTORY.
+Prompt the user for a directory and add the rule to the
 \".gitignore\" file in that directory.  Since such files are
 tracked, they are shared with other clones of the repository.
 Also stage the file.
