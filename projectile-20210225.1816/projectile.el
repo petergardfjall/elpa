@@ -4,8 +4,8 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: https://github.com/bbatsov/projectile
-;; Package-Version: 20210125.726
-;; Package-Commit: 793abfead25a7ef92ad3a443ad3067a82f4a2fb9
+;; Package-Version: 20210225.1816
+;; Package-Commit: f3f8a6505d50ca0f03f7deef99a1c8aa3bcd9e58
 ;; Keywords: project, convenience
 ;; Version: 2.4.0-snapshot
 ;; Package-Requires: ((emacs "25.1") (pkg-info "0.4"))
@@ -634,7 +634,7 @@ When set to nil you'll have always add projects explicitly with
 You can think of something like $PATH, but for projects instead of executables.
 Examples of such paths might be ~/projects, ~/work, etc."
   :group 'projectile
-  :type 'list
+  :type '(repeat directory)
   :package-version '(projectile . "1.0.0"))
 
 (defcustom projectile-git-command "git ls-files -zco --exclude-standard"
@@ -2798,8 +2798,8 @@ test/impl/other files as below:
 ;; Java & friends
 (projectile-register-project-type 'maven '("pom.xml")
                                   :project-file "pom.xml"
-                                  :compile "mvn clean install"
-                                  :test "mvn test"
+                                  :compile "mvn -B clean install"
+                                  :test "mvn -B test"
                                   :test-suffix "Test"
                                   :src-dir "main/src/"
                                   :test-dir "main/test/")
