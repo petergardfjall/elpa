@@ -1,8 +1,8 @@
 ;;; rust-mode.el --- A major emacs mode for editing Rust source code -*-lexical-binding: t-*-
 
 ;; Version: 0.5.0
-;; Package-Version: 20201204.1527
-;; Package-Commit: c5c7ed31a2e1106ab4835b135618a34570796dc7
+;; Package-Version: 20210226.1106
+;; Package-Commit: e9e9e32c4f82a9b895543c120b327ab5536ec42b
 ;; Author: Mozilla
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
@@ -1922,10 +1922,20 @@ Return the created process."
   (interactive)
   (rust--compile "%s build" rust-cargo-bin))
 
+(defun rust-compile-release ()
+  "Compile using `cargo build --release`"
+  (interactive)
+  (rust--compile "%s build --release" rust-cargo-bin))
+
 (defun rust-run ()
   "Run using `cargo run`"
   (interactive)
   (rust--compile "%s run" rust-cargo-bin))
+
+(defun rust-run-release ()
+  "Run using `cargo run --release`"
+  (interactive)
+  (rust--compile "%s run --release" rust-cargo-bin))
 
 (defun rust-test ()
   "Test using `cargo test`"
