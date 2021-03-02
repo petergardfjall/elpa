@@ -30,7 +30,6 @@
 (require 'dash)
 (require 'ht)
 (require 'f)
-(require 'tree-widget)
 (require 'request)
 (require 'cl-lib)
 
@@ -663,7 +662,7 @@ FULL specify whether full or incremental build will be performed."
    (t (let* ((project-gradlew (f-join (lsp-java--get-root) "gradlew -v"))
              (gradle-version-output (shell-command-to-string project-gradlew)))
         (when (string-match "Revision" gradle-version-output)
-            (nth 2 (split-string gradle-version-output)))))))
+          (nth 2 (split-string gradle-version-output)))))))
 
 (defun lsp-java--ls-command ()
   "LS startup command."
@@ -953,6 +952,16 @@ current symbol."
   (interactive)
   (lsp-java-execute-matching-action "Assign parameter to new field"))
 
+(defun lsp-java-assign-statement-to-local ()
+  "Assign statement to new local variable"
+  (interactive)
+  (lsp-java-execute-matching-action "Assign statement to new local variable"))
+
+(defun lsp-java-assign-statement-to-field ()
+  "Assign statement to new field"
+  (interactive)
+  (lsp-java-execute-matching-action "Assign statement to new field"))
+
 (defun lsp-java-assign-all ()
   "Assign to new field."
   (interactive)
@@ -966,8 +975,13 @@ current symbol."
 (defun lsp-java--bundles ()
   "Get lsp java bundles."
   (let ((bundles-dir (lsp-java--bundles-dir)))
-    (append lsp-java-bundles (when (file-directory-p bundles-dir)
-                               (apply 'vector (directory-files bundles-dir t "\\.jar$"))))))
+    (->> (-filter
+          (lambda (s)
+            (not (s-contains? "com.microsoft.java.test.runner.jar" s)))
+          (when (file-directory-p bundles-dir)
+            (directory-files bundles-dir t "\\.jar$")))
+         (append lsp-java-bundles)
+         (apply #'vector))))
 
 (defun lsp-java--workspace-folders (_workspace)
   "Return WORKSPACE folders."
@@ -1323,6 +1337,8 @@ current symbol."
                       "extractConstant"
                       "extractMethod"
                       "extractField"
+                      "assignField"
+                      "assignVariable"
                       "convertVariableToField"
                       "invertVariable"
                       "convertAnonymousClassToNestedCommand")
