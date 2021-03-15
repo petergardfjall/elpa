@@ -12,8 +12,8 @@
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; Package-Requires: ((emacs "25.1") (dash "20200524") (transient "20200601") (with-editor "20200522"))
-;; Package-Version: 20210206.2245
-;; Package-Commit: 62dfe5a9dde309b562871ef93fde3d8fb37a5870
+;; Package-Version: 20210309.1106
+;; Package-Commit: cb9bb20cfe8e3a50df8669a43611ebc9a516358a
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
 
@@ -189,8 +189,17 @@ The major mode configured here is turned on by the minor mode
   :type '(choice (function-item text-mode)
                  (function-item markdown-mode)
                  (function-item org-mode)
+                 (function-item fundamental-mode)
+                 (function-item git-commit-elisp-text-mode)
                  (function :tag "Another mode")
                  (const :tag "No major mode")))
+;;;###autoload(put 'git-commit-major-mode 'safe-local-variable
+;;;###autoload     (lambda (val)
+;;;###autoload       (memq val '(text-mode
+;;;###autoload                   markdown-mode
+;;;###autoload                   org-mode
+;;;###autoload                   fundamental-mode
+;;;###autoload                   git-commit-elisp-text-mode))))
 
 (defcustom git-commit-setup-hook
   '(git-commit-save-message
