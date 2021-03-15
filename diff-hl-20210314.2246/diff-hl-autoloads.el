@@ -1,4 +1,4 @@
-;;; diff-hl-autoloads.el --- automatically extracted autoloads
+;;; diff-hl-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -12,10 +12,16 @@
 (autoload 'diff-hl-mode "diff-hl" "\
 Toggle VC diff highlighting.
 
-If called interactively, enable Diff-Hl mode if ARG is positive,
-and disable it if ARG is zero or negative.  If called from Lisp,
-also enable the mode if ARG is omitted or nil, and toggle it if
-ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Diff-Hl mode'.  If the prefix
+argument is positive, enable the mode, and if it is zero or
+negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
@@ -64,17 +70,17 @@ or call the function `global-diff-hl-mode'.")
 
 (autoload 'global-diff-hl-mode "diff-hl" "\
 Toggle Diff-Hl mode in all buffers.
-With prefix ARG, enable Global Diff-Hl mode if ARG is positive;
-otherwise, disable it.  If called from Lisp, enable the mode if
-ARG is omitted or nil.
+With prefix ARG, enable Global Diff-Hl mode if ARG is positive; otherwise,
+disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
 
-Diff-Hl mode is enabled in all buffers where
-`diff-hl--global-turn-on' would do it.
+Diff-Hl mode is enabled in all buffers where `diff-hl--global-turn-on' would
+do it.
+
 See `diff-hl-mode' for more information on Diff-Hl mode.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl" '("diff-hl-")))
+(register-definition-prefixes "diff-hl" '("diff-hl-"))
 
 ;;;***
 
@@ -87,10 +93,16 @@ Most useful with backends that support rewriting local commits,
 and most importantly, \"amending\" the most recent one.
 Currently only supports Git, Mercurial and Bazaar.
 
-If called interactively, enable Diff-Hl-Amend mode if ARG is
-positive, and disable it if ARG is zero or negative.  If called
-from Lisp, also enable the mode if ARG is omitted or nil, and
-toggle it if ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Diff-Hl-Amend mode'.  If the
+prefix argument is positive, enable the mode, and if it is zero
+or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
@@ -109,16 +121,16 @@ or call the function `global-diff-hl-amend-mode'.")
 (autoload 'global-diff-hl-amend-mode "diff-hl-amend" "\
 Toggle Diff-Hl-Amend mode in all buffers.
 With prefix ARG, enable Global Diff-Hl-Amend mode if ARG is positive;
-otherwise, disable it.  If called from Lisp, enable the mode if
-ARG is omitted or nil.
+otherwise, disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
 
 Diff-Hl-Amend mode is enabled in all buffers where
 `turn-on-diff-hl-amend-mode' would do it.
+
 See `diff-hl-amend-mode' for more information on Diff-Hl-Amend mode.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-amend" '("diff-hl-amend-setup" "turn-on-diff-hl-amend-mode")))
+(register-definition-prefixes "diff-hl-amend" '("diff-hl-amend-setup" "turn-on-diff-hl-amend-mode"))
 
 ;;;***
 
@@ -128,16 +140,22 @@ See `diff-hl-amend-mode' for more information on Diff-Hl-Amend mode.
 (autoload 'diff-hl-dired-mode "diff-hl-dired" "\
 Toggle VC diff highlighting on the side of a Dired window.
 
-If called interactively, enable Diff-Hl-Dired mode if ARG is
-positive, and disable it if ARG is zero or negative.  If called
-from Lisp, also enable the mode if ARG is omitted or nil, and
-toggle it if ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Diff-Hl-Dired mode'.  If the
+prefix argument is positive, enable the mode, and if it is zero
+or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
 (autoload 'diff-hl-dired-mode-unless-remote "diff-hl-dired" nil nil nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-dired" '("diff-hl-dired-")))
+(register-definition-prefixes "diff-hl-dired" '("diff-hl-dired-"))
 
 ;;;***
 
@@ -159,14 +177,20 @@ or call the function `diff-hl-flydiff-mode'.")
 Perform highlighting on-the-fly.
 This is a global minor mode.  It alters how `diff-hl-mode' works.
 
-If called interactively, enable Diff-Hl-Flydiff mode if ARG is
-positive, and disable it if ARG is zero or negative.  If called
-from Lisp, also enable the mode if ARG is omitted or nil, and
-toggle it if ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Diff-Hl-Flydiff mode'.  If the
+prefix argument is positive, enable the mode, and if it is zero
+or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-flydiff" '("diff-hl-flydiff")))
+(register-definition-prefixes "diff-hl-flydiff" '("diff-hl-flydiff"))
 
 ;;;***
 
@@ -185,7 +209,7 @@ is closed.
 
 \(fn LINES &optional HEADER FOOTER KEYMAP CLOSE-HOOK POINT HEIGHT)" nil nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-inline-popup" '("diff-hl-inline-popup-")))
+(register-definition-prefixes "diff-hl-inline-popup" '("diff-hl-inline-popup-"))
 
 ;;;***
 
@@ -206,10 +230,16 @@ or call the function `diff-hl-margin-mode'.")
 (autoload 'diff-hl-margin-mode "diff-hl-margin" "\
 Toggle displaying `diff-hl-mode' highlights on the margin.
 
-If called interactively, enable Diff-Hl-Margin mode if ARG is
-positive, and disable it if ARG is zero or negative.  If called
-from Lisp, also enable the mode if ARG is omitted or nil, and
-toggle it if ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Diff-Hl-Margin mode'.  If the
+prefix argument is positive, enable the mode, and if it is zero
+or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
@@ -217,14 +247,20 @@ toggle it if ARG is `toggle'; disable the mode otherwise.
 Toggle displaying `diff-hl-mode' highlights on the margin locally.
 You probably shouldn't use this function directly.
 
-If called interactively, enable Diff-Hl-Margin-Local mode if ARG
-is positive, and disable it if ARG is zero or negative.  If
-called from Lisp, also enable the mode if ARG is omitted or nil,
-and toggle it if ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Diff-Hl-Margin-Local mode'.  If
+the prefix argument is positive, enable the mode, and if it is
+zero or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-margin" '("diff-hl-")))
+(register-definition-prefixes "diff-hl-margin" '("diff-hl-"))
 
 ;;;***
 
@@ -257,10 +293,16 @@ customizable.  It can be also invoked with the command
 `diff-hl-show-hunk'
 \\{diff-hl-show-hunk-mouse-mode-map}
 
-If called interactively, enable Diff-Hl-Show-Hunk-Mouse mode if
-ARG is positive, and disable it if ARG is zero or negative.  If
-called from Lisp, also enable the mode if ARG is omitted or nil,
-and toggle it if ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Diff-Hl-Show-Hunk-Mouse mode'.
+If the prefix argument is positive, enable the mode, and if it is
+zero or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
@@ -278,17 +320,19 @@ or call the function `global-diff-hl-show-hunk-mouse-mode'.")
 
 (autoload 'global-diff-hl-show-hunk-mouse-mode "diff-hl-show-hunk" "\
 Toggle Diff-Hl-Show-Hunk-Mouse mode in all buffers.
-With prefix ARG, enable Global Diff-Hl-Show-Hunk-Mouse mode if ARG is positive;
-otherwise, disable it.  If called from Lisp, enable the mode if
-ARG is omitted or nil.
+With prefix ARG, enable Global Diff-Hl-Show-Hunk-Mouse mode if ARG is
+positive; otherwise, disable it.  If called from Lisp, enable the mode if ARG is omitted
+or nil.
 
 Diff-Hl-Show-Hunk-Mouse mode is enabled in all buffers where
 `diff-hl-show-hunk-mouse-mode' would do it.
-See `diff-hl-show-hunk-mouse-mode' for more information on Diff-Hl-Show-Hunk-Mouse mode.
+
+See `diff-hl-show-hunk-mouse-mode' for more information on
+Diff-Hl-Show-Hunk-Mouse mode.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-show-hunk" '("diff-hl-show-hunk-")))
+(register-definition-prefixes "diff-hl-show-hunk" '("diff-hl-show-hunk-"))
 
 ;;;***
 
@@ -301,7 +345,7 @@ Implementation to show the hunk in a posframe.
 
 \(fn BUFFER &optional LINE)" nil nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "diff-hl-show-hunk-posframe" '("diff-hl-show-hunk-")))
+(register-definition-prefixes "diff-hl-show-hunk-posframe" '("diff-hl-show-hunk-"))
 
 ;;;***
 
