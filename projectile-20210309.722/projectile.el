@@ -4,8 +4,8 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: https://github.com/bbatsov/projectile
-;; Package-Version: 20210225.1816
-;; Package-Commit: f3f8a6505d50ca0f03f7deef99a1c8aa3bcd9e58
+;; Package-Version: 20210309.722
+;; Package-Commit: 1528ed4f082e7aaca19f22394eb4bed879645b7c
 ;; Keywords: project, convenience
 ;; Version: 2.4.0-snapshot
 ;; Package-Requires: ((emacs "25.1") (pkg-info "0.4"))
@@ -3739,7 +3739,8 @@ files in the project."
     ;; we have to reject directories as a workaround to work with git submodules
     (cl-remove-if
      #'file-directory-p
-     (mapcar #'projectile-expand-root (projectile-dir-files directory)))))
+     (mapcar #'(lambda (file) (expand-file-name file directory))
+             (projectile-dir-files directory)))))
 
 ;;;###autoload
 (defun projectile-replace (&optional arg)
@@ -3805,7 +3806,8 @@ to run the replacement."
           ;; don't support Emacs regular expressions.
           (cl-remove-if
            #'file-directory-p
-           (mapcar #'projectile-expand-root (projectile-dir-files directory)))))
+           (mapcar #'(lambda (file) (expand-file-name file directory))
+                   (projectile-dir-files directory)))))
     ;; FIXME: Probably would fail on Emacs 27+, fourth argument is gone.
     (with-no-warnings (tags-query-replace old-text new-text nil (cons 'list files)))))
 
