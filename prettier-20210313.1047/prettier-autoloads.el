@@ -1,4 +1,4 @@
-;;; prettier-autoloads.el --- automatically extracted autoloads
+;;; prettier-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -30,10 +30,16 @@ With prefix, ask for the parser to use" t nil)
 (autoload 'prettier-mode "prettier" "\
 Runs prettier on file save when this mode is turned on
 
-If called interactively, enable Prettier mode if ARG is positive,
-and disable it if ARG is zero or negative.  If called from Lisp,
-also enable the mode if ARG is omitted or nil, and toggle it if
-ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Prettier mode'.  If the prefix
+argument is positive, enable the mode, and if it is zero or
+negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
@@ -51,17 +57,20 @@ or call the function `global-prettier-mode'.")
 
 (autoload 'global-prettier-mode "prettier" "\
 Toggle Prettier mode in all buffers.
-With prefix ARG, enable Global Prettier mode if ARG is positive;
-otherwise, disable it.  If called from Lisp, enable the mode if
-ARG is omitted or nil.
+With prefix ARG, enable Global Prettier mode if ARG is positive; otherwise,
+disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
 
-Prettier mode is enabled in all buffers where
-`(lambda nil (when (and (not prettier-mode) (or (null prettier-mode-ignore-buffer-function) (not (funcall prettier-mode-ignore-buffer-function))) (prettier--parsers)) (with-temp-message (unless (eq prettier-pre-warm 'none) Prettier pre-warming...) (prettier-mode))))' would do it.
+Prettier mode is enabled in all buffers where `(lambda nil (when (and (not
+prettier-mode) (or (null prettier-mode-ignore-buffer-function) (not (funcall
+prettier-mode-ignore-buffer-function))) (prettier--parsers)) (with-temp-message
+\(unless (eq prettier-pre-warm 'none) Prettier pre-warming...) (prettier-mode))))'
+would do it.
+
 See `prettier-mode' for more information on Prettier mode.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "prettier" '("prettier-")))
+(register-definition-prefixes "prettier" '("prettier-"))
 
 ;;;***
 
