@@ -728,8 +728,15 @@ it is disabled.
 
 ;;;***
 
-;;;### (autoloads nil nil ("lsp-cmake.el" "lsp-dhall.el" "lsp-mode-pkg.el"
-;;;;;;  "lsp-nim.el" "lsp.el") (0 0 0 0))
+;;;### (autoloads nil "lsp-zig" "lsp-zig.el" (0 0 0 0))
+;;; Generated autoloads from lsp-zig.el
+
+(register-definition-prefixes "lsp-zig" '("lsp-zig-zls-executable"))
+
+;;;***
+
+;;;### (autoloads nil nil ("lsp-cmake.el" "lsp-d.el" "lsp-dhall.el"
+;;;;;;  "lsp-mode-pkg.el" "lsp-nim.el" "lsp.el") (0 0 0 0))
 
 ;;;***
 
