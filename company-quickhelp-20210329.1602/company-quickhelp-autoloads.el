@@ -1,4 +1,4 @@
-;;; company-quickhelp-autoloads.el --- automatically extracted autoloads
+;;; company-quickhelp-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -13,10 +13,16 @@
 (autoload 'company-quickhelp-local-mode "company-quickhelp" "\
 Provides documentation popups for `company-mode' using `pos-tip'.
 
-If called interactively, enable Company-Quickhelp-Local mode if
-ARG is positive, and disable it if ARG is zero or negative.  If
-called from Lisp, also enable the mode if ARG is omitted or nil,
-and toggle it if ARG is `toggle'; disable the mode otherwise.
+If called interactively, toggle `Company-Quickhelp-Local mode'.
+If the prefix argument is positive, enable the mode, and if it is
+zero or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
 
 \(fn &optional ARG)" t nil)
 
@@ -34,17 +40,18 @@ or call the function `company-quickhelp-mode'.")
 
 (autoload 'company-quickhelp-mode "company-quickhelp" "\
 Toggle Company-Quickhelp-Local mode in all buffers.
-With prefix ARG, enable Company-Quickhelp mode if ARG is positive;
-otherwise, disable it.  If called from Lisp, enable the mode if
-ARG is omitted or nil.
+With prefix ARG, enable Company-Quickhelp mode if ARG is positive; otherwise,
+disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
 
 Company-Quickhelp-Local mode is enabled in all buffers where
 `company-quickhelp-local-mode' would do it.
-See `company-quickhelp-local-mode' for more information on Company-Quickhelp-Local mode.
+
+See `company-quickhelp-local-mode' for more information on
+Company-Quickhelp-Local mode.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "company-quickhelp" '("company-quickhelp-")))
+(register-definition-prefixes "company-quickhelp" '("company-quickhelp-"))
 
 ;;;***
 
