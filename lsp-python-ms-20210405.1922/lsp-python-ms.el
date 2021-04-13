@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.1
-;; Package-Version: 20210217.1823
-;; Package-Commit: 689f6cf815c8ee2ca2332f31dfda8ddefb0b7e26
+;; Package-Version: 20210405.1922
+;; Package-Commit: 8d228b0f6dde3a4d1327650c17b21539ff4a08ee
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "6.1"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-python-ms
 ;; Keywords: languages tools
@@ -351,12 +351,19 @@ After stopping or killing the process, retry to update."
     (when (locate-dominating-file dir ".python-version")
       (string-trim (shell-command-to-string "pyenv which python")))))
 
+(defun lsp-python-ms--dominating-asdf-python (&optional dir)
+  "Locate dominating asdf-managed python"
+  (let ((dir (or dir default-directory)))
+    (when (locate-dominating-file dir ".tool-versions")
+      (string-trim (shell-command-to-string "asdf which python")))))
+
 (defun lsp-python-ms--valid-python (path)
   (and path (f-executable? path) path))
 
 (defun lsp-python-ms-locate-python (&optional dir)
   "Look for virtual environments local to the workspace."
   (let* ((pyenv-python (lsp-python-ms--dominating-pyenv-python dir))
+         (asdf-python (lsp-python-ms--dominating-asdf-python dir))
          (venv-python (lsp-python-ms--dominating-venv-python dir))
          (conda-python (lsp-python-ms--dominating-conda-python dir))
          (sys-python
@@ -370,6 +377,7 @@ After stopping or killing the process, retry to update."
     (if lsp-python-ms-guess-env
         (cond ((lsp-python-ms--valid-python lsp-python-ms-python-executable))
               ((lsp-python-ms--valid-python venv-python))
+              ((lsp-python-ms--valid-python asdf-python))
               ((lsp-python-ms--valid-python pyenv-python))
               ((lsp-python-ms--valid-python conda-python))
               ((lsp-python-ms--valid-python sys-python)))
@@ -433,11 +441,14 @@ Old lsp will pass in a WORKSPACE, new lsp has a global
 lsp-workspace-root function that finds the current buffer's
 workspace root.  If nothing works, default to the current file's
 directory"
-  (let ((workspace-root (if workspace (lsp--workspace-root workspace) (lsp-python-ms--workspace-root))))
+  (let ((workspace-root (or (if workspace
+                                (lsp--workspace-root workspace)
+                              (lsp-python-ms--workspace-root))
+                            default-directory)))
     (when lsp-python-ms-parse-dot-env-enabled
       (lsp-python-ms--parse-dot-env workspace-root))
     (cl-destructuring-bind (pyver pysyspath pyintpath)
-        (lsp-python-ms--get-python-ver-and-syspath workspace-root)
+      (lsp-python-ms--get-python-ver-and-syspath workspace-root)
       `(:interpreter
         (:properties
          (:InterpreterPath ,pyintpath :UseDefaultDatabase t :Version ,pyver))
