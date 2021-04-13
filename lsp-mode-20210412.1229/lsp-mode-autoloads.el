@@ -86,7 +86,7 @@ it is disabled.
 
 (add-hook 'lsp-configure-hook (lambda nil (when (and lsp-auto-configure lsp-completion-enable) (lsp-completion--enable))))
 
-(register-definition-prefixes "lsp-completion" '("lsp-completion-"))
+(register-definition-prefixes "lsp-completion" '("lsp-"))
 
 ;;;***
 
@@ -188,7 +188,7 @@ it is disabled.
 ;;;### (autoloads nil "lsp-elixir" "lsp-elixir.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-elixir.el
 
-(register-definition-prefixes "lsp-elixir" '("lsp-"))
+(register-definition-prefixes "lsp-elixir" '("lsp-elixir-"))
 
 ;;;***
 
