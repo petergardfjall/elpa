@@ -5,8 +5,8 @@
 ;; Author: Yevgnen Koh <wherejoystarts@gmail.com>
 ;; Homepage: https://github.com/Yevgnen/ivy-rich
 ;; Package-Requires: ((emacs "25.1") (ivy "0.13.0"))
-;; Package-Version: 20210212.1441
-;; Package-Commit: 7b9b7b20c3ead81da90232cd6707dfad3c1f1eb3
+;; Package-Version: 20210409.931
+;; Package-Commit: 600b8183ed0be8668dcc548cc2c8cb94b001363b
 ;; Version: 0.1.6
 ;; Keywords: convenience, ivy
 
@@ -167,6 +167,9 @@ again to make this variable take effect.")
 Each key-value pair in ATTRS is put into the property list for the column.
 Existing properties for the column are left unchanged.
 
+The COLUMN has to be exist. You can't modify a non-exist column
+because ivy-rich doesn't know how to order new columns.
+
 Usage:
 
 (ivy-rich-modify-column 'ivy-switch-buffer
@@ -174,9 +177,19 @@ Usage:
                         '(:width 20 :face error))"
   (if (cl-evenp (length attrs))
       (let* ((trans (plist-get ivy-rich-display-transformers-list cmd))
-             (props (cadr (assoc column (plist-get trans :columns)))))
+             (columns (plist-get trans :columns))
+             (props (cadr (assq column columns))))
+        (unless props
+          (error "Can not modify non-exist column"))
         (while attrs
-          (plist-put props (pop attrs) (pop attrs))))
+          (setq props (plist-put props (pop attrs) (pop attrs))))
+        (setcdr (assq column columns) (list props))
+        (setq ivy-rich-display-transformers-list
+              (plist-put ivy-rich-display-transformers-list
+                         cmd
+                         (plist-put trans :columns columns)))
+        (ivy-rich-set-display-transformer nil))
+
     (error "Column key-value attributes must be in pairs")))
 
 (defun ivy-rich-modify-columns (cmd column-list)
@@ -199,6 +212,28 @@ Usage:
             (ivy-rich-modify-column cmd column attrs)
           (setq column-list (cdr column-list)))
       (error "Column/attributes are incorrectly specified"))))
+
+(defun ivy-rich-set-columns (cmd column-list)
+  "Set the CMD transformer's properties for a COLUMN-LIST.
+
+The :columns of the given command will be replaced by COLUMN-LIST.
+Each item in COLUMN-LIST is a two-item list comprised of a column and list
+of attribute key-value pairs.
+
+Usage:
+
+(ivy-rich-set-columns
+ 'counsel-recentf
+ '((file-name-nondirectory
+    (:width 0.2))
+   (ivy-rich-candidate
+    (:width 0.6))))"
+  (let* ((trans (plist-get ivy-rich-display-transformers-list cmd)))
+    (setq ivy-rich-display-transformers-list
+          (plist-put ivy-rich-display-transformers-list
+                     cmd
+                     (plist-put trans :columns column-list)))
+    (ivy-rich-set-display-transformer nil)))
 
 ;; Common Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defalias 'ivy-rich-candidate 'identity)
@@ -616,14 +651,15 @@ The cache can be cleared manually by calling
               candidate
             (ivy-rich-format candidate columns delimiter)))))))
 
-(defun ivy-rich-set-display-transformer ()
+(defun ivy-rich-set-display-transformer (backup)
   (cl-loop for (cmd transformer-props) on ivy-rich-display-transformers-list by 'cddr do
            (let* ((cmd-string (symbol-name cmd))
                   (package (if (string-match "^\\(swiper\\|counsel\\)" cmd-string)
                                (match-string 1 cmd-string))))
              (if package
                  (require (intern package)))  ; NOTE: Need to load the original transformer
-             (ivy-rich-backup-transformer cmd)
+             (if backup
+                 (ivy-rich-backup-transformer cmd))
              (ivy-set-display-transformer cmd (ivy-rich-build-transformer cmd transformer-props)))))
 
 (defun ivy-rich-unset-display-transformer ()
@@ -644,7 +680,7 @@ The cache can be cleared manually by calling
   :global t
   (if ivy-rich-mode
       (unless ivy-rich--original-display-transformers-list
-        (ivy-rich-set-display-transformer))
+        (ivy-rich-set-display-transformer 'backup))
     (ivy-rich-unset-display-transformer)))
 
 ;;;###autoload
