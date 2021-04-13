@@ -4,8 +4,8 @@
 
 ;; Author: Arif Rezai, Vincent Zhang, Andrew Christianson
 ;; Version: 0.2.0
-;; Package-Version: 20210220.1714
-;; Package-Commit: 65fb14128127fb1ddf68dd4cb3140d6c7911a093
+;; Package-Version: 20210412.1551
+;; Package-Commit: 3fd23f17ddff8d22115f7b0b9d3f4ed8fb90add3
 ;; Package-Requires: ((emacs "26.1") (lsp-mode "7.0") (dash "2.18.0") (ht "2.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-pyright
 ;; Keywords: languages, tools, lsp
@@ -125,6 +125,12 @@ Virtual Envs specified in pyrightconfig.json will be looked up in this path."
   :type 'string
   :group 'lsp-pyright)
 
+(defcustom lsp-pyright-venv-directory nil
+  "Folder with subdirectories that contain virtual environments.
+Virtual Envs specified in pyrightconfig.json will be looked up in this path."
+  :type 'string
+  :group 'lsp-pyright)
+
 (defcustom lsp-pyright-typeshed-paths []
   "Paths to look for typeshed modules.
 Pyright currently honors only the first path in the array."
@@ -155,6 +161,9 @@ Only available in Emacs 27 and above."
 (defun lsp-pyright-locate-venv ()
   "Look for virtual environments local to the workspace."
   (or lsp-pyright-venv-path
+      (and lsp-pyright-venv-directory
+           (-when-let (venv-base-directory (locate-dominating-file default-directory lsp-pyright-venv-directory))
+             (concat venv-base-directory lsp-pyright-venv-directory)))
       (-when-let (venv-base-directory (locate-dominating-file default-directory "venv/"))
         (concat venv-base-directory "venv"))
       (-when-let (venv-base-directory (locate-dominating-file default-directory ".venv/"))
