@@ -4,8 +4,8 @@
 
 ;; Author: Arif Rezai, Vincent Zhang, Andrew Christianson
 ;; Version: 0.2.0
-;; Package-Version: 20210412.1551
-;; Package-Commit: 3fd23f17ddff8d22115f7b0b9d3f4ed8fb90add3
+;; Package-Version: 20210513.1022
+;; Package-Commit: e986eeb15d1b3bf0f8c59be71684eac0d3894de5
 ;; Package-Requires: ((emacs "26.1") (lsp-mode "7.0") (dash "2.18.0") (ht "2.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-pyright
 ;; Keywords: languages, tools, lsp
@@ -116,19 +116,19 @@ If there are no execution environments defined in the config file."
 
 (defcustom lsp-pyright-stub-path ""
   "Path to directory containing custom type stub files."
-  :type 'string
+  :type 'directory
   :group 'lsp-pyright)
 
 (defcustom lsp-pyright-venv-path nil
   "Path to folder with subdirectories that contain virtual environments.
 Virtual Envs specified in pyrightconfig.json will be looked up in this path."
-  :type 'string
+  :type '(choice (const :tag "None" nil) file)
   :group 'lsp-pyright)
 
 (defcustom lsp-pyright-venv-directory nil
   "Folder with subdirectories that contain virtual environments.
 Virtual Envs specified in pyrightconfig.json will be looked up in this path."
-  :type 'string
+  :type '(choice (const :tag "None" nil) directory)
   :group 'lsp-pyright)
 
 (defcustom lsp-pyright-typeshed-paths []
