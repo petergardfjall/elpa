@@ -4,8 +4,8 @@
 
 ;; Author: Lars Andersen <expez@expez.com>
 ;; URL: https://www.github.com/expez/company-quickhelp
-;; Package-Version: 20210329.1602
-;; Package-Commit: 8c667a9d7c06782340ebe91cd94f490e44dd2547
+;; Package-Version: 20210515.2212
+;; Package-Commit: 530b29380f0f95ae338cbe089693d786e6f53d86
 ;; Keywords: company popup documentation quickhelp
 ;; Version: 2.2.0
 ;; Package-Requires: ((emacs "24.3") (company "0.8.9") (pos-tip "0.4.6"))
@@ -130,14 +130,14 @@ resolve ambiguous documentation requests.  Instead of failing we
 just grab the first candidate and press forward."
   (car candidates))
 
-(defun company-quickhelp--fetch-docstring (backend)
-  "Fetch docstring from BACKEND."
-  (let ((quickhelp-str (company-call-backend 'quickhelp-string backend)))
+(defun company-quickhelp--fetch-docstring (selected)
+  "Fetch docstring from the current backend for SELECTED string."
+  (let ((quickhelp-str (company-call-backend 'quickhelp-string selected)))
     (if (stringp quickhelp-str)
         (with-temp-buffer
           (insert quickhelp-str)
           (company-quickhelp--docstring-from-buffer (point-min)))
-      (let ((doc (company-call-backend 'doc-buffer backend)))
+      (let ((doc (company-call-backend 'doc-buffer selected)))
         (when doc
           ;; The company backend can either return a buffer with the doc or a
           ;; cons containing the doc buffer and a position at which to start
@@ -207,7 +207,7 @@ currently active `company' completion candidate."
                          (w-h (pos-tip-string-width-height doc)))
                     (cond
                      ((> (car w-h) width)
-                      (setq doc (pos-tip-fill-string doc width nil 'none nil max-height)
+                      (setq doc (pos-tip-fill-string doc width nil nil nil max-height)
                             w-h (pos-tip-string-width-height doc)))
                      ((or (> (car w-h) max-width)
                           (> (cdr w-h) max-height))
