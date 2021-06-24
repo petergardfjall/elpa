@@ -30,6 +30,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'which-key-mode)'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -43,8 +46,7 @@ Apply suggested settings for side-window that opens on right
 if there is space and the bottom otherwise." t nil)
 
 (autoload 'which-key-setup-side-window-bottom "which-key" "\
-Apply suggested settings for side-window that opens on
-bottom." t nil)
+Apply suggested settings for side-window that opens on bottom." t nil)
 
 (autoload 'which-key-setup-minibuffer "which-key" "\
 Apply suggested settings for minibuffer.
@@ -183,8 +185,8 @@ Dispatch C-h commands by looking up key in
 prefix) if `which-key-use-C-h-commands' is non nil." t nil)
 
 (autoload 'which-key-show-keymap "which-key" "\
-Show the top-level bindings in KEYMAP using which-key. KEYMAP
-is selected interactively from all available keymaps.
+Show the top-level bindings in KEYMAP using which-key.
+KEYMAP is selected interactively from all available keymaps.
 
 If NO-PAGING is non-nil, which-key will not intercept subsequent
 keypresses for the paging functionality.
@@ -192,20 +194,22 @@ keypresses for the paging functionality.
 \(fn KEYMAP &optional NO-PAGING)" t nil)
 
 (autoload 'which-key-show-full-keymap "which-key" "\
-Show all bindings in KEYMAP using which-key. KEYMAP is
-selected interactively from all available keymaps.
+Show all bindings in KEYMAP using which-key.
+KEYMAP is selected interactively from all available keymaps.
 
 \(fn KEYMAP)" t nil)
 
 (autoload 'which-key-show-minor-mode-keymap "which-key" "\
-Show the top-level bindings in KEYMAP using which-key. KEYMAP
-is selected interactively by mode in `minor-mode-map-alist'.
+Show the top-level bindings in KEYMAP using which-key.
+KEYMAP is selected interactively by mode in
+`minor-mode-map-alist'.
 
 \(fn &optional ALL)" t nil)
 
 (autoload 'which-key-show-full-minor-mode-keymap "which-key" "\
-Show all bindings in KEYMAP using which-key. KEYMAP
-is selected interactively by mode in `minor-mode-map-alist'." t nil)
+Show all bindings in KEYMAP using which-key.
+KEYMAP is selected interactively by mode in
+`minor-mode-map-alist'." t nil)
 
 (register-definition-prefixes "which-key" '("which-key-"))
 
