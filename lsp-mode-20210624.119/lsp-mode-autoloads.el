@@ -86,6 +86,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-completion-mode'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -142,6 +145,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-diagnostics-mode'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -176,6 +182,9 @@ negative, disable the mode.
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'lsp-dired-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -291,6 +300,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-headerline-breadcrumb-mode'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -403,6 +415,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-lens-mode'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -433,6 +448,16 @@ Click lsp lens using `avy' package." t nil)
 ;;; Generated autoloads from lsp-mode.el
 (put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
 (put 'lsp-file-watch-threshold 'safe-local-variable (lambda (i) (or (numberp i) (not i))))
+
+(autoload 'lsp-load-vscode-workspace "lsp-mode" "\
+Load vscode workspace from FILE
+
+\(fn FILE)" t nil)
+
+(autoload 'lsp-save-vscode-workspace "lsp-mode" "\
+Save vscode workspace to FILE
+
+\(fn FILE)" t nil)
 
 (autoload 'lsp "lsp-mode" "\
 Entry point for the server startup.
@@ -469,6 +494,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-modeline-code-actions-mode'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -487,6 +515,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-modeline-diagnostics-mode'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -502,6 +533,9 @@ if it is zero or negative, disable the mode.
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-modeline-workspace-status-mode'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -642,6 +676,9 @@ zero or negative, disable the mode.
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `lsp-semantic-tokens-mode'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
