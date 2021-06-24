@@ -13,7 +13,7 @@
 Show symbols view." t nil)
 
 (autoload 'lsp-treemacs-java-deps-list "lsp-treemacs" "\
-Display error list." t nil)
+Display java dependencies." t nil)
 
 (autoload 'lsp-treemacs-java-deps-follow "lsp-treemacs" nil t nil)
 
@@ -37,6 +37,9 @@ or negative, disable the mode.
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'lsp-treemacs-sync-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
