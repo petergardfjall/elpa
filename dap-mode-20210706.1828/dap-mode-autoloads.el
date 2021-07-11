@@ -122,6 +122,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'dap-mode)'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -147,6 +150,9 @@ zero or negative, disable the mode.
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'dap-auto-configure-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -180,6 +186,9 @@ or negative, disable the mode.
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'dap-tooltip-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -263,6 +272,9 @@ If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'dap-ui-mode)'.
+
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
@@ -291,6 +303,9 @@ or negative, disable the mode.
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value 'dap-ui-controls-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
