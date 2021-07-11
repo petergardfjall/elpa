@@ -12,11 +12,11 @@
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; Keywords: git tools vc
-;; Package-Commit: 71f57c5582448be81b02ba53750dd2ea39ed0eaf
+;; Package-Commit: 9b7b25f1e460f79de894f583727635134b7513a2
 ;; Homepage: https://github.com/magit/magit
-;; Package-Requires: ((emacs "25.1") (dash "20210330") (transient "20210524") (with-editor "20210524"))
-;; Package-Version: 20210525.844
-;; Package-X-Original-Version: 3.0.0
+;; Package-Requires: ((emacs "25.1") (dash "20210330") (transient "20210701") (with-editor "20210524"))
+;; Package-Version: 20210702.822
+;; Package-X-Original-Version: 3.1.0
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software; you can redistribute it and/or modify
