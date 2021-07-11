@@ -1,4 +1,4 @@
-;;; web-server-autoloads.el --- automatically extracted autoloads
+;;; web-server-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -50,7 +50,7 @@ function.
 
 \(fn HANDLERS PORT &optional LOG-BUFFER &rest NETWORK-ARGS)" nil nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "web-server" '("ws-")))
+(register-definition-prefixes "web-server" '("ws-"))
 
 ;;;***
 
@@ -58,7 +58,7 @@ function.
 ;;;;;;  (0 0 0 0))
 ;;; Generated autoloads from web-server-status-codes.el
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "web-server-status-codes" '("ws-status-codes")))
+(register-definition-prefixes "web-server-status-codes" '("ws-status-codes"))
 
 ;;;***
 
