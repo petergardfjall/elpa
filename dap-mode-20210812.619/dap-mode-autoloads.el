@@ -41,6 +41,13 @@
 
 ;;;***
 
+;;;### (autoloads nil "dap-erlang" "dap-erlang.el" (0 0 0 0))
+;;; Generated autoloads from dap-erlang.el
+
+(register-definition-prefixes "dap-erlang" '("dap-erlang--populate-start-file-args"))
+
+;;;***
+
 ;;;### (autoloads nil "dap-firefox" "dap-firefox.el" (0 0 0 0))
 ;;; Generated autoloads from dap-firefox.el
 
@@ -114,9 +121,9 @@ or call the function `dap-mode'.")
 (autoload 'dap-mode "dap-mode" "\
 Global minor mode for DAP mode.
 
-If called interactively, toggle `Dap mode'.  If the prefix
-argument is positive, enable the mode, and if it is zero or
-negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the `Dap
+mode' mode.  If the prefix argument is positive, enable the mode,
+and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -143,9 +150,10 @@ or call the function `dap-auto-configure-mode'.")
 (autoload 'dap-auto-configure-mode "dap-mode" "\
 Auto configure dap minor mode.
 
-If called interactively, toggle `Dap-Auto-Configure mode'.  If
-the prefix argument is positive, enable the mode, and if it is
-zero or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Dap-Auto-Configure mode' mode.  If the prefix argument is
+positive, enable the mode, and if it is zero or negative, disable
+the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -179,9 +187,9 @@ or call the function `dap-tooltip-mode'.")
 (autoload 'dap-tooltip-mode "dap-mouse" "\
 Toggle the display of GUD tooltips.
 
-If called interactively, toggle `Dap-Tooltip mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Dap-Tooltip mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -264,9 +272,9 @@ or call the function `dap-ui-mode'.")
 (autoload 'dap-ui-mode "dap-ui" "\
 Displaying DAP visuals.
 
-If called interactively, toggle `Dap-Ui mode'.  If the prefix
-argument is positive, enable the mode, and if it is zero or
-negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Dap-Ui mode' mode.  If the prefix argument is positive, enable
+the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -296,9 +304,9 @@ or call the function `dap-ui-controls-mode'.")
 (autoload 'dap-ui-controls-mode "dap-ui" "\
 Displaying DAP visuals.
 
-If called interactively, toggle `Dap-Ui-Controls mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Dap-Ui-Controls mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
