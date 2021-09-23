@@ -30,9 +30,10 @@ or call the function `lsp-treemacs-sync-mode'.")
 (autoload 'lsp-treemacs-sync-mode "lsp-treemacs" "\
 Global minor mode for synchronizing lsp-mode workspace folders and treemacs projects.
 
-If called interactively, toggle `Lsp-Treemacs-Sync mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Lsp-Treemacs-Sync mode' mode.  If the prefix argument is
+positive, enable the mode, and if it is zero or negative, disable
+the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
