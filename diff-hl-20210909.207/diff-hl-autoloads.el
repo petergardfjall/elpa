@@ -12,9 +12,9 @@
 (autoload 'diff-hl-mode "diff-hl" "\
 Toggle VC diff highlighting.
 
-If called interactively, toggle `Diff-Hl mode'.  If the prefix
-argument is positive, enable the mode, and if it is zero or
-negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Diff-Hl mode' mode.  If the prefix argument is positive, enable
+the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -74,7 +74,11 @@ or call the function `global-diff-hl-mode'.")
 (autoload 'global-diff-hl-mode "diff-hl" "\
 Toggle Diff-Hl mode in all buffers.
 With prefix ARG, enable Global Diff-Hl mode if ARG is positive; otherwise,
-disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
+disable it.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.
+Enable the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
 
 Diff-Hl mode is enabled in all buffers where `diff-hl--global-turn-on' would
 do it.
@@ -96,9 +100,9 @@ Most useful with backends that support rewriting local commits,
 and most importantly, \"amending\" the most recent one.
 Currently only supports Git, Mercurial and Bazaar.
 
-If called interactively, toggle `Diff-Hl-Amend mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Diff-Hl-Amend mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -127,7 +131,11 @@ or call the function `global-diff-hl-amend-mode'.")
 (autoload 'global-diff-hl-amend-mode "diff-hl-amend" "\
 Toggle Diff-Hl-Amend mode in all buffers.
 With prefix ARG, enable Global Diff-Hl-Amend mode if ARG is positive;
-otherwise, disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
+otherwise, disable it.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.
+Enable the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
 
 Diff-Hl-Amend mode is enabled in all buffers where
 `turn-on-diff-hl-amend-mode' would do it.
@@ -146,9 +154,9 @@ See `diff-hl-amend-mode' for more information on Diff-Hl-Amend mode.
 (autoload 'diff-hl-dired-mode "diff-hl-dired" "\
 Toggle VC diff highlighting on the side of a Dired window.
 
-If called interactively, toggle `Diff-Hl-Dired mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Diff-Hl-Dired mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -186,9 +194,9 @@ or call the function `diff-hl-flydiff-mode'.")
 Perform highlighting on-the-fly.
 This is a global minor mode.  It alters how `diff-hl-mode' works.
 
-If called interactively, toggle `Diff-Hl-Flydiff mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Diff-Hl-Flydiff mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -242,9 +250,9 @@ or call the function `diff-hl-margin-mode'.")
 (autoload 'diff-hl-margin-mode "diff-hl-margin" "\
 Toggle displaying `diff-hl-mode' highlights on the margin.
 
-If called interactively, toggle `Diff-Hl-Margin mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Diff-Hl-Margin mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -262,9 +270,10 @@ it is disabled.
 Toggle displaying `diff-hl-mode' highlights on the margin locally.
 You probably shouldn't use this function directly.
 
-If called interactively, toggle `Diff-Hl-Margin-Local mode'.  If
-the prefix argument is positive, enable the mode, and if it is
-zero or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Diff-Hl-Margin-Local mode' mode.  If the prefix argument is
+positive, enable the mode, and if it is zero or negative, disable
+the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -311,9 +320,10 @@ customizable.  It can be also invoked with the command
 `diff-hl-show-hunk'
 \\{diff-hl-show-hunk-mouse-mode-map}
 
-If called interactively, toggle `Diff-Hl-Show-Hunk-Mouse mode'.
-If the prefix argument is positive, enable the mode, and if it is
-zero or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Diff-Hl-Show-Hunk-Mouse mode' mode.  If the prefix argument is
+positive, enable the mode, and if it is zero or negative, disable
+the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -342,8 +352,11 @@ or call the function `global-diff-hl-show-hunk-mouse-mode'.")
 (autoload 'global-diff-hl-show-hunk-mouse-mode "diff-hl-show-hunk" "\
 Toggle Diff-Hl-Show-Hunk-Mouse mode in all buffers.
 With prefix ARG, enable Global Diff-Hl-Show-Hunk-Mouse mode if ARG is
-positive; otherwise, disable it.  If called from Lisp, enable the mode if ARG is omitted
-or nil.
+positive; otherwise, disable it.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.
+Enable the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
 
 Diff-Hl-Show-Hunk-Mouse mode is enabled in all buffers where
 `diff-hl-show-hunk-mouse-mode' would do it.
