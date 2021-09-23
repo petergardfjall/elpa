@@ -1,6 +1,6 @@
-(define-package "immaterial-theme" "20210126.1127" "A flexible theme based on material design principles"
+(define-package "immaterial-theme" "20210922.1826" "A flexible theme based on material design principles"
   '((emacs "25"))
-  :commit "c5684a17c78e6e05ea0bdb63e44373b064db935a" :authors
+  :commit "c3f35042264a734fb5cb105a81689c35e0622df0" :authors
   '(("Peter Gardfjäll"))
   :maintainer
   '("Peter Gardfjäll")

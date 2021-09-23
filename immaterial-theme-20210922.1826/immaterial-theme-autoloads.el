@@ -1,4 +1,4 @@
-;;; immaterial-theme-autoloads.el --- automatically extracted autoloads
+;;; immaterial-theme-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -10,7 +10,7 @@
 ;;;;;;  (0 0 0 0))
 ;;; Generated autoloads from immaterial-dark-theme.el
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "immaterial-dark-theme" '("immaterial-dark")))
+(register-definition-prefixes "immaterial-dark-theme" '("immaterial-dark"))
 
 ;;;***
 
@@ -18,7 +18,7 @@
 ;;;;;;  (0 0 0 0))
 ;;; Generated autoloads from immaterial-light-theme.el
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "immaterial-light-theme" '("immaterial-light")))
+(register-definition-prefixes "immaterial-light-theme" '("immaterial-light"))
 
 ;;;***
 
@@ -28,7 +28,7 @@
 
 (when load-file-name (add-to-list 'custom-theme-load-path (file-name-as-directory (file-name-directory load-file-name))))
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "immaterial-theme" '("immaterial-")))
+(register-definition-prefixes "immaterial-theme" '("immaterial-"))
 
 ;;;***
 
