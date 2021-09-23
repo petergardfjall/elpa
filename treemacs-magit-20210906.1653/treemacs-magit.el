@@ -4,8 +4,8 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "26.1") (treemacs "0.0") (pfuture "1.3" ) (magit "2.90.0"))
-;; Package-Version: 20210107.1251
-;; Package-Commit: 559fa09e32d5db7f620fdd08e03b938e67bf398b
+;; Package-Version: 20210906.1653
+;; Package-Commit: 6e40f148855a7e51a13101d58b4c420d846d07eb
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -59,7 +59,7 @@ In order for the update to fully run several conditions must be met:
          3 nil
          (lambda ()
            (unwind-protect
-               (pcase treemacs-git-mode
+               (pcase treemacs--git-mode
                  ('simple
                   (treemacs-magit--simple-git-mode-update magit-root))
                  ((or 'extended 'deferred)
