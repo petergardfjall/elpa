@@ -1,4 +1,4 @@
-;;; nvm-autoloads.el --- automatically extracted autoloads
+;;; nvm-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -32,7 +32,7 @@ previously used version.
 Activate Node based on an .nvmrc for the current file.
 If buffer is not visiting a file, do nothing." nil nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "nvm" '("nvm-")))
+(register-definition-prefixes "nvm" '("nvm-"))
 
 ;;;***
 
