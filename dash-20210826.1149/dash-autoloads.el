@@ -12,9 +12,9 @@
 (autoload 'dash-fontify-mode "dash" "\
 Toggle fontification of Dash special variables.
 
-If called interactively, toggle `Dash-Fontify mode'.  If the
-prefix argument is positive, enable the mode, and if it is zero
-or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Dash-Fontify mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
@@ -53,7 +53,11 @@ or call the function `global-dash-fontify-mode'.")
 (autoload 'global-dash-fontify-mode "dash" "\
 Toggle Dash-Fontify mode in all buffers.
 With prefix ARG, enable Global Dash-Fontify mode if ARG is positive;
-otherwise, disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
+otherwise, disable it.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.
+Enable the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
 
 Dash-Fontify mode is enabled in all buffers where `dash--turn-on-fontify-mode'
 would do it.
