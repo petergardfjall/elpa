@@ -1794,6 +1794,14 @@ Unset the local representation of REMOTE's default branch.
 Delete the symbolic-ref \"refs/remotes/<remote>/HEAD\".
 
 \(fn REMOTE)" t nil)
+
+(autoload 'magit-remote-unshallow "magit-remote" "\
+Convert a shallow remote into a full one.
+If only a single refspec is set and it does not contain a
+wildcard, then also offer to replace it with the standard
+refspec.
+
+\(fn REMOTE)" t nil)
  (autoload 'magit-remote-configure "magit-remote" nil t)
 
 (register-definition-prefixes "magit-remote" '("magit-"))
@@ -2096,6 +2104,14 @@ while two prefix arguments are equivalent to `--all'.
 Apply a stash to the working tree.
 Try to preserve the stash index.  If that fails because there
 are staged changes, apply without preserving the stash index.
+
+\(fn STASH)" t nil)
+
+(autoload 'magit-stash-pop "magit-stash" "\
+Apply a stash to the working tree and remove it from stash list.
+Try to preserve the stash index.  If that fails because there
+are staged changes, apply without preserving the stash index
+and forgo removing the stash.
 
 \(fn STASH)" t nil)
 
