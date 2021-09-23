@@ -30,13 +30,16 @@ With prefix, ask for the parser to use" t nil)
 (autoload 'prettier-mode "prettier" "\
 Runs prettier on file save when this mode is turned on
 
-If called interactively, toggle `Prettier mode'.  If the prefix
-argument is positive, enable the mode, and if it is zero or
-negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Prettier mode' mode.  If the prefix argument is positive, enable
+the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `prettier-mode'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -58,7 +61,11 @@ or call the function `global-prettier-mode'.")
 (autoload 'global-prettier-mode "prettier" "\
 Toggle Prettier mode in all buffers.
 With prefix ARG, enable Global Prettier mode if ARG is positive; otherwise,
-disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
+disable it.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.
+Enable the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
 
 Prettier mode is enabled in all buffers where `(lambda nil (when (and (not
 prettier-mode) (or (null prettier-mode-ignore-buffer-function) (not (funcall
