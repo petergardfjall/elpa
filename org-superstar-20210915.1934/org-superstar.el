@@ -1,13 +1,13 @@
 ;;; org-superstar.el --- Prettify headings and plain lists in Org mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  D. Williams, sabof
+;; Copyright (C) 2020, 2021  D. Williams, sabof
 
 ;; Author: D. Williams <d.williams@posteo.net>
 ;; Maintainer: D. Williams <d.williams@posteo.net>
 ;; Keywords: faces, outlines
-;; Package-Version: 20210216.1925
-;; Package-Commit: 9d64c42e5029910153ec74cb9b5747b074281140
-;; Version: 1.5.0
+;; Package-Version: 20210915.1934
+;; Package-Commit: 03be6c0a3081c46a59b108deb8479ee24a6d86c0
+;; Version: 1.5.1
 ;; Homepage: https://github.com/integral-dw/org-superstar-mode
 ;; Package-Requires: ((org "9.1.9") (emacs "26.1"))
 
@@ -628,21 +628,17 @@ replaced by their corresponding entry in ‘org-superstar-item-bullet-alist’."
 
 
 ;;; Predicates
-;; ‘org-list-in-valid-context-p’ is currently not working.
 
-;; Explicitly returning t is redundant, but does not leak information
-;; about how the predicate is implemented.
+;; ‘org-list-in-valid-context-p’ is currently not working.
 (defun org-superstar-plain-list-p ()
-  "Return t if the current match is a proper plain list.
+  "Return non-nil if the current match is a proper plain list.
 
 This function may be expensive for files with very large plain
 lists; consider using ‘org-superstar-toggle-lightweight-lists’ in
 such cases to avoid slowdown."
   (or org-superstar-lightweight-lists
-      (and (save-match-data
-	     (org-element-lineage (org-element-at-point)
-				  '(plain-list) t))
-	   t)))
+      (save-match-data
+        (not (org-in-src-block-p)))))
 
 (defun org-superstar-headline-or-inlinetask-p ()
   "Return t if the current match is a proper headline or inlinetask."
@@ -853,11 +849,11 @@ cleanup routines."
            ,@(when (featurep 'org-inlinetask)
                '((2 (org-superstar--prettify-other-hbullet)
                     prepend))))
-          ("^\\(?4:\\*\\)\\(?:\\*\\{2,\\}\\) "
-           ,@(when (and (featurep 'org-inlinetask)
-                        org-inlinetask-show-first-star
-                        (not org-superstar-remove-leading-stars))
-               '((4 (org-superstar--prettify-first-bullet)
+          ,@(when (and (featurep 'org-inlinetask)
+                       org-inlinetask-show-first-star
+                       (not org-superstar-remove-leading-stars))
+              '(("^\\(?4:\\*\\)\\(?:\\*\\{2,\\}\\) "
+                 (4 (org-superstar--prettify-first-bullet)
                     t)))))))
 
 (defun org-superstar--fontify-buffer ()
@@ -872,7 +868,8 @@ cleanup routines."
 ;;;###autoload
 (define-minor-mode org-superstar-mode
   "Use UTF8 bullets for headlines and plain lists."
-  nil nil nil
+  :lighter nil
+  :keymap nil
   :group 'org-superstar
   :require 'org
   (cond
