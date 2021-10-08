@@ -256,6 +256,14 @@ it is disabled.
 
 ;;;***
 
+;;;### (autoloads nil "dap-swi-prolog" "dap-swi-prolog.el" (0 0 0
+;;;;;;  0))
+;;; Generated autoloads from dap-swi-prolog.el
+
+(register-definition-prefixes "dap-swi-prolog" '("dap-swi-prolog-"))
+
+;;;***
+
 ;;;### (autoloads nil "dap-ui" "dap-ui.el" (0 0 0 0))
 ;;; Generated autoloads from dap-ui.el
 
