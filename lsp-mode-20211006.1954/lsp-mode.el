@@ -1950,7 +1950,9 @@ PARAMS - the data sent from WORKSPACE."
                   (mapconcat
                    (-lambda ((&WorkDoneProgressBegin :message? :title :percentage?))
                      (concat (if percentage?
-                                 (format "%s%%%% " percentage?)
+                                 (if (numberp percentage?)
+                                     (format "%.0f%%%% " percentage?)
+                                   (format "%s%%%% " percentage?))
                                "")
                              (or message? title)))
                    (ht-values tokens)
@@ -3492,10 +3494,13 @@ disappearing, unset all the variables related to it."
                            lsp--registered-capability-options
                            (lsp:did-change-watched-files-registration-options-watchers)
                            (seq-find
-                            (-lambda ((&FileSystemWatcher :glob-pattern :kind?))
+                            (-lambda ((fs-watcher &as &FileSystemWatcher :glob-pattern :kind? :_cachedRegexp cached-regexp))
                               (when (or (null kind?)
                                         (> (logand kind? watch-bit) 0))
-                                (-let [regexes (lsp-glob-to-regexps glob-pattern)]
+                                (-let [regexes (or cached-regexp
+                                                   (let ((regexp (lsp-glob-to-regexps glob-pattern)))
+                                                     (lsp-put fs-watcher :_cachedRegexp regexp)
+                                                     regexp))]
                                   (-any? (lambda (re)
                                            (or (string-match re changed-file)
                                                (string-match re rel-changed-file)))
@@ -3640,7 +3645,7 @@ yet."
   (let ((print-length nil)
         (print-level nil))
     ;; Create all parent directories:
-    (apply #'f-mkdir (f-split (f-parent file-name)))
+    (make-directory (f-parent file-name) t)
     (f-write-text (prin1-to-string to-persist) 'utf-8 file-name)))
 
 (defun lsp-workspace-folders-add (project-root)
@@ -4407,7 +4412,10 @@ Added to `after-change-functions'."
   ;; So (47 54 0) means add    7 chars starting at pos 47
   ;; So (47 47 7) means delete 7 chars starting at pos 47
   (save-match-data
-    (let ((inhibit-quit t))
+    (let ((inhibit-quit t)
+          ;; make sure that `lsp-on-change' is called in multi-workspace context
+          ;; see #2901
+          lsp--cur-workspace)
       ;; A (revert-buffer) call with the 'preserve-modes parameter (eg, as done
       ;; by auto-revert-mode) will cause this handler to get called with a nil
       ;; buffer-file-name. We need the buffer-file-name to send notifications;
@@ -4837,20 +4845,21 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
   most recently requested highlights.")
 
 (defun lsp--document-highlight ()
-  (let ((curr-sym-bounds (bounds-of-thing-at-point 'symbol)))
-    (unless (or (looking-at "[[:space:]\n]")
-                (not lsp-enable-symbol-highlighting)
-                (and lsp--have-document-highlights
-                     curr-sym-bounds
-                     (equal curr-sym-bounds
-                            lsp--symbol-bounds-of-last-highlight-invocation)))
-      (setq lsp--symbol-bounds-of-last-highlight-invocation
-            curr-sym-bounds)
-      (lsp-request-async "textDocument/documentHighlight"
-                         (lsp--text-document-position-params)
-                         #'lsp--document-highlight-callback
-                         :mode 'tick
-                         :cancel-token :highlights))))
+  (when (lsp-feature? "textDocument/documentHighlight")
+    (let ((curr-sym-bounds (bounds-of-thing-at-point 'symbol)))
+      (unless (or (looking-at "[[:space:]\n]")
+                  (not lsp-enable-symbol-highlighting)
+                  (and lsp--have-document-highlights
+                       curr-sym-bounds
+                       (equal curr-sym-bounds
+                              lsp--symbol-bounds-of-last-highlight-invocation)))
+        (setq lsp--symbol-bounds-of-last-highlight-invocation
+              curr-sym-bounds)
+        (lsp-request-async "textDocument/documentHighlight"
+                           (lsp--text-document-position-params)
+                           #'lsp--document-highlight-callback
+                           :mode 'tick
+                           :cancel-token :highlights)))))
 
 (defun lsp-describe-thing-at-point ()
   "Display the type signature and documentation of the thing at
@@ -8082,6 +8091,7 @@ Returns nil if the project should not be added to the current SESSION."
 
 %s==>Import project root %s.
 %s==>Import project by selecting root directory interactively.
+%s==>Import project at current directory %s.
 %s==>Do not ask again for the current project by adding %s to lsp-session-folders-blacklist.
 %s==>Do not ask again for the current project by selecting ignore path interactively.
 %s==>Do nothing: ask again when opening other files from the current project."
@@ -8089,6 +8099,8 @@ Returns nil if the project should not be added to the current SESSION."
                                 (propertize "i" 'face 'success)
                                 (propertize project-root-suggestion 'face 'bold)
                                 (propertize "I" 'face 'success)
+                                (propertize "." 'face 'success)
+                                (propertize default-directory 'face 'bold)
                                 (propertize "d" 'face 'warning)
                                 (propertize project-root-suggestion 'face 'bold)
                                 (propertize "D" 'face 'warning)
@@ -8100,6 +8112,7 @@ Returns nil if the project should not be added to the current SESSION."
                                    (or project-root-suggestion default-directory)
                                    nil
                                    t))
+          (?. default-directory)
           (?d (push project-root-suggestion (lsp-session-folders-blacklist session))
               (lsp--persist-session session)
               nil)
