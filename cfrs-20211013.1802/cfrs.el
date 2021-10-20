@@ -4,9 +4,9 @@
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "26.1") (dash "2.11.0") (s "1.10.0") (posframe "0.6.0"))
-;; Package-Commit: 894d889a68a482d369010fe25da16c75f13f7cdb
-;; Package-Version: 20211006.1711
-;; Package-X-Original-Version: 1.5.4
+;; Package-Commit: c1f639d7bfd3e728cf85dbe224b06a4be76158f4
+;; Package-Version: 20211013.1802
+;; Package-X-Original-Version: 1.5.5
 ;; Homepage: https://github.com/Alexander-Miller/cfrs
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -72,6 +72,7 @@ Only the `:background' part is used."
                                           (cursor-type . ,cursor)
                                           (no-accept-focus . nil)))))
       (with-selected-frame frame
+        (select-frame frame)
         (x-focus-frame frame)
         (add-hook 'delete-frame-functions #'cfrs--on-frame-kill nil :local)
         (with-current-buffer buffer
