@@ -70,8 +70,8 @@ Disable the mode if ARG is a negative number.
 Prettier mode is enabled in all buffers where `(lambda nil (when (and (not
 prettier-mode) (or (null prettier-mode-ignore-buffer-function) (not (funcall
 prettier-mode-ignore-buffer-function))) (prettier--parsers)) (with-temp-message
-\(unless (eq prettier-pre-warm 'none) Prettier pre-warming...) (prettier-mode))))'
-would do it.
+\(unless (eq prettier-pre-warm 'none) Prettier pre-warming...)
+\(prettier-mode))))' would do it.
 
 See `prettier-mode' for more information on Prettier mode.
 
