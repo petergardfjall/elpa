@@ -1,4 +1,4 @@
-;;; protobuf-mode-autoloads.el --- automatically extracted autoloads
+;;; protobuf-mode-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -17,9 +17,11 @@ The hook `c-mode-common-hook' is run with no argument at mode
 initialization, then `protobuf-mode-hook'.
 
 Key bindings:
-\\{protobuf-mode-map}" t nil)
+\\{protobuf-mode-map}
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "protobuf-mode" '("protobuf-")))
+\(fn)" t nil)
+
+(register-definition-prefixes "protobuf-mode" '("protobuf-"))
 
 ;;;***
 
