@@ -4,8 +4,8 @@
 
 ;; Author: Leo Liu <sdl.web@gmail.com>
 ;; Version: 0.9.0
-;; Package-Version: 20211008.528
-;; Package-Commit: 1442ab8c7f02d246f14150207534fba4a42201ba
+;; Package-Version: 20211020.354
+;; Package-Commit: 8e16861392d7499bf3a212db1f5e9e0ef2e4fba9
 ;; Keywords: tools, convenience
 ;; Created: 2013-01-29
 ;; URL: https://github.com/leoliu/ggtags
@@ -2373,10 +2373,22 @@ Function `ggtags-eldoc-function' disabled for eldoc in current buffer: %S" err))
 
 (cl-defstruct (ggtags-xref-location
                (:constructor ggtags-make-xref-location (file line column project-root)))
-  file project-root)
+  file line column project-root)
 
 (cl-defmethod xref-location-group ((l ggtags-xref-location))
   (file-relative-name (ggtags-xref-location-file l) (ggtags-xref-location-project-root l)))
+
+(cl-defmethod xref-location-marker ((l ggtags-xref-location))
+  (let ((buffer (find-file-noselect (ggtags-xref-location-file l))))
+    (with-current-buffer buffer
+      (save-excursion
+        (goto-char (point-min))
+        (forward-line (1- (ggtags-xref-location-line l)))
+        (move-to-column (1- (ggtags-xref-location-column l)))
+        (point-marker)))))
+
+(cl-defmethod xref-location-line ((l ggtags-xref-location))
+  (ggtags-xref-location-line l))
 
 (defun ggtags--xref-backend ()
   (and (ggtags-find-project)
