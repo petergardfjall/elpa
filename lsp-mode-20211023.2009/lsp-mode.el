@@ -835,6 +835,7 @@ directory")
     ("textDocument/formatting" :capability :documentFormattingProvider)
     ("textDocument/hover" :capability :hoverProvider)
     ("textDocument/implementation" :capability :implementationProvider)
+    ("textDocument/linkedEditingRange" :capability :linkedEditingRangeProvider)
     ("textDocument/onTypeFormatting" :capability :documentOnTypeFormattingProvider)
     ("textDocument/prepareRename"
      :check-command (lambda (workspace)
@@ -3429,6 +3430,7 @@ disappearing, unset all the variables related to it."
                                                         ;; Remove this after jdtls support resolveSupport
                                                         (resolveAdditionalTextEditsSupport . t)
                                                         (insertReplaceSupport . t)
+                                                        (deprecatedSupport . t)
                                                         (resolveSupport
                                                          . ((properties . ["documentation"
                                                                            "details"
@@ -3450,8 +3452,7 @@ disappearing, unset all the variables related to it."
                       (publishDiagnostics . ((relatedInformation . t)
                                              (tagSupport . ((valueSet . [1 2])))
                                              (versionSupport . t)))
-                      (moniker . nil)
-                      (linkedEditingRange . nil)))
+                      (linkedEditingRange . ((dynamicRegistration . t)))))
      (window . ((workDoneProgress . t)
                 (showMessage . nil)
                 (showDocument . nil))))

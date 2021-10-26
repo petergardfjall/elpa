@@ -367,12 +367,24 @@ language server doesn't support renaming.
 
 See also `lsp-enable-symbol-highlighting'." t nil)
 
+(autoload 'lsp-iedit-linked-ranges "lsp-iedit" "\
+Start an `iedit' for `textDocument/linkedEditingRange'" t nil)
+
 (autoload 'lsp-evil-multiedit-highlights "lsp-iedit" "\
 Start an `evil-multiedit' operation on the documentHighlights at point.
 This can be used as a primitive `lsp-rename' replacement if the
 language server doesn't support renaming.
 
 See also `lsp-enable-symbol-highlighting'." t nil)
+
+(autoload 'lsp-evil-multiedit-linked-ranges "lsp-iedit" "\
+Start an `evil-multiedit' for `textDocument/linkedEditingRange'" t nil)
+
+(autoload 'lsp-evil-state-highlights "lsp-iedit" "\
+Start `iedit-mode'. for `textDocument/documentHighlight'" t nil)
+
+(autoload 'lsp-evil-state-linked-ranges "lsp-iedit" "\
+Start `iedit-mode'. for `textDocument/linkedEditingRange'" t nil)
 
 (register-definition-prefixes "lsp-iedit" '("lsp-iedit--on-ranges"))
 
