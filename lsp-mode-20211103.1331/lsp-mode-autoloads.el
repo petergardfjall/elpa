@@ -480,10 +480,15 @@ Save vscode workspace to FILE
 \(fn FILE)" t nil)
 
 (autoload 'lsp-install-server "lsp-mode" "\
-Interactively install server.
+Interactively install or re-install server.
 When prefix UPDATE? is t force installation even if the server is present.
 
 \(fn UPDATE\\=\\? &optional SERVER-ID)" t nil)
+
+(autoload 'lsp-update-server "lsp-mode" "\
+Interactively update a server.
+
+\(fn &optional SERVER-ID)" t nil)
 
 (autoload 'lsp-ensure-server "lsp-mode" "\
 Ensure server SERVER-ID
@@ -505,7 +510,7 @@ Entry point that defers server startup until buffer is visible.
 `lsp-deferred' will wait until the buffer is visible before invoking `lsp'.
 This avoids overloading the server with many files when starting Emacs." nil nil)
 
-(register-definition-prefixes "lsp-mode" '("lsp-" "make-lsp-client" "when-lsp-workspace" "with-lsp-workspace"))
+(register-definition-prefixes "lsp-mode" '("defcustom-lsp" "lsp-" "make-lsp-client" "when-lsp-workspace" "with-lsp-workspace"))
 
 ;;;***
 
