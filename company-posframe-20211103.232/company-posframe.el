@@ -5,8 +5,8 @@
 ;; Author: Clément Pit-Claudel, Feng Shu, Lars Andersen <expez@expez.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/company-posframe
-;; Package-Version: 20210419.607
-;; Package-Commit: c7a820a35ff132aaec53c81e05afc829de39eb68
+;; Package-Version: 20211103.232
+;; Package-Commit: e104c0d0ee8db4a5fc852b3fc951e52989ee8755
 ;; Version: 0.6.0
 ;; Keywords: abbrev, convenience, matching
 ;; Package-Requires: ((emacs "26.0")(company "0.9.0")(posframe "0.9.0"))
@@ -167,9 +167,9 @@ be triggered manually using `company-posframe-quickhelp-show'."
 
 (defvar company-posframe-quickhelp-show-params
   (list :poshandler #'company-posframe-quickhelp-right-poshandler
-        :internal-border-width 1
+        :border-width 1
+        :border-color "gray50"
         :timeout 60
-        :internal-border-color "gray50"
         :no-properties nil)
   "List of parameters passed to `posframe-show'.")
 
@@ -250,7 +250,7 @@ be triggered manually using `company-posframe-quickhelp-show'."
                        (- (plist-get info :position)
                           (plist-get info :company-prefix-length)
                           (plist-get info :company-margin)))))
-         (info (plist-put info :position-info (posn-at-point point parent-window))))
+         (info (plist-put info :position (posn-at-point point parent-window))))
     (posframe-poshandler-point-bottom-left-corner info)))
 
 (defun company-posframe-show ()
