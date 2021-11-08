@@ -420,6 +420,56 @@ Show a contextual right click menu based on click EVENT.
 
 ;;;***
 
+;;;### (autoloads nil "treemacs-peek-mode" "treemacs-peek-mode.el"
+;;;;;;  (0 0 0 0))
+;;; Generated autoloads from treemacs-peek-mode.el
+
+(defvar treemacs-peek-mode nil "\
+Non-nil if Treemacs-Peek mode is enabled.
+See the `treemacs-peek-mode' command
+for a description of this minor mode.
+Setting this variable directly does not take effect;
+either customize it (see the info node `Easy Customization')
+or call the function `treemacs-peek-mode'.")
+
+(custom-autoload 'treemacs-peek-mode "treemacs-peek-mode" nil)
+
+(autoload 'treemacs-peek-mode "treemacs-peek-mode" "\
+Minor mode that allows you to peek at buffers before deciding to open them.
+
+This is a minor mode.  If called interactively, toggle the
+`Treemacs-Peek mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
+the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `(default-value \\='treemacs-peek-mode)'.
+
+The mode's hook is called both when the mode is enabled and when
+it is disabled.
+
+While the mode is active treemacs will automatically display the file at point,
+without leving the treemacs window.
+
+Peeking will stop when you leave the treemacs window, be it through a command
+like `treemacs-RET-action' or some other window selection change.
+
+Files' buffers that have been opened for peeking will be cleaned up if they did
+not exist before peeking started.
+
+The peeked window can be scrolled using
+`treemacs-next/previous-line-other-window' and
+`treemacs-next/previous-page-other-window'
+
+\(fn &optional ARG)" t nil)
+
+(register-definition-prefixes "treemacs-peek-mode" '("treemacs--"))
+
+;;;***
+
 ;;;### (autoloads nil "treemacs-persistence" "treemacs-persistence.el"
 ;;;;;;  (0 0 0 0))
 ;;; Generated autoloads from treemacs-persistence.el
