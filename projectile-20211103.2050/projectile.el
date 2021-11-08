@@ -4,8 +4,8 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.dev>
 ;; URL: https://github.com/bbatsov/projectile
-;; Package-Version: 20210930.1757
-;; Package-Commit: 7f64570d3e6829d767d340c8584f3e4f3472ee81
+;; Package-Version: 20211103.2050
+;; Package-Commit: 584ff420b2c5637b05be5c4808754d6e947ab6c1
 ;; Keywords: project, convenience
 ;; Version: 2.6.0-snapshot
 ;; Package-Requires: ((emacs "25.1"))
@@ -862,9 +862,10 @@ specify a project explicitly via the optional PROJECT param."
   "Serialize DATA to FILENAME.
 
 The saved data can be restored with `projectile-unserialize'."
-  (when (file-writable-p filename)
+  (if (file-writable-p filename)
     (with-temp-file filename
-      (insert (let (print-length) (prin1-to-string data))))))
+      (insert (let (print-length) (prin1-to-string data))))
+    (message "Projectile cache '%s' not writeable" filename)))
 
 (defun projectile-unserialize (filename)
   "Read data serialized by `projectile-serialize' from FILENAME."
@@ -3972,14 +3973,14 @@ installed to work."
 ;;;###autoload
 (defun projectile-run-shell-command-in-root (command &optional output-buffer error-buffer)
   "Invoke `shell-command' in the project's root."
-  (interactive "sShell command: ")
+  (interactive (list (read-shell-command "Shell command: ")))
   (projectile-with-default-dir (projectile-acquire-root)
     (shell-command command output-buffer error-buffer)))
 
 ;;;###autoload
 (defun projectile-run-async-shell-command-in-root (command &optional output-buffer error-buffer)
   "Invoke `async-shell-command' in the project's root."
-  (interactive "sAsync shell command: ")
+  (interactive (list (read-shell-command "Async shell command: ")))
   (projectile-with-default-dir (projectile-acquire-root)
     (async-shell-command command output-buffer error-buffer)))
 
