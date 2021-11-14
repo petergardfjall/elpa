@@ -4,8 +4,8 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.dev>
 ;; URL: https://github.com/bbatsov/projectile
-;; Package-Version: 20211103.2050
-;; Package-Commit: 584ff420b2c5637b05be5c4808754d6e947ab6c1
+;; Package-Version: 20211113.1943
+;; Package-Commit: 96130165ef4040426d34d877b9ee6dfd27f92fb9
 ;; Keywords: project, convenience
 ;; Version: 2.6.0-snapshot
 ;; Package-Requires: ((emacs "25.1"))
@@ -1049,7 +1049,11 @@ If DEPTH is non-nil recursively descend exactly DEPTH levels below DIRECTORY and
 discover projects there."
   (if (file-directory-p directory)
       (if (and (numberp depth) (> depth 0))
-          (dolist (dir (directory-files directory t))
+          ;; Ignore errors when listing files in the directory, because
+          ;; sometimes that directory is an unreadable one at the root of a
+          ;; volume. This is the case, for example, on macOS with the
+          ;; .Spotlight-V100 directory.
+          (dolist (dir (ignore-errors (directory-files directory t)))
             (when (and (file-directory-p dir)
                        (not (member (file-name-nondirectory dir) '(".." "."))))
               (projectile-discover-projects-in-directory dir (1- depth))))
