@@ -777,6 +777,13 @@ it is disabled.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-toml" "lsp-toml.el" (0 0 0 0))
+;;; Generated autoloads from lsp-toml.el
+
+(register-definition-prefixes "lsp-toml" '("lsp-toml-"))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-v" "lsp-v.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-v.el
 
