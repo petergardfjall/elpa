@@ -1895,18 +1895,17 @@ cater to that.
 ‘magit-diff-highlight-trailing’, and ‘magit-diff-paint-whitespace’; and
 insert some whitespace errors into the code you use for testing.)
 
-   For e.g.  "added lines" you have to adjust three faces:
-‘magit-diff-added’, ‘magit-diff-added-highlight’, and
-‘smerge-refined-added’.  Make sure that the latter works well with both
-of the former, as well as ‘smerge-other’ and ‘diff-added’.  Then do the
-same for the removed lines, context lines, lines added by us, and lines
-added by them.  Also make sure the respective added, removed, and
-context faces use approximately the same saturation for both the
-highlighted and unhighlighted variants.  Also make sure the file and
-diff headings work nicely with context lines (e.g.  make them look
-different).  Line faces should set both the foreground and the
-background color.  For example, for added lines use two different
-greens.
+   For added lines you have to adjust three faces: ‘magit-diff-added’,
+‘magit-diff-added-highlight’, and ‘diff-refined-added’.  Make sure that
+the latter works well with both of the former, as well as ‘smerge-other’
+and ‘diff-added’.  Then do the same for the removed lines, context
+lines, lines added by us, and lines added by them.  Also make sure the
+respective added, removed, and context faces use approximately the same
+saturation for both the highlighted and unhighlighted variants.  Also
+make sure the file and diff headings work nicely with context lines
+(e.g.  make them look different).  Line faces should set both the
+foreground and the background color.  For example, for added lines use
+two different greens.
 
    It’s best if the foreground color of both the highlighted and the
 unhighlighted variants are the same, so you will need to have to find a
@@ -2472,13 +2471,13 @@ Appendix C Keystroke Index
 * A:                                     Cherry Picking.      (line   8)
 * A A:                                   Cherry Picking.      (line  17)
 * A a:                                   Cherry Picking.      (line  24)
-* A A <1>:                               Cherry Picking.      (line  90)
-* A a <1>:                               Cherry Picking.      (line  98)
+* A A <1>:                               Cherry Picking.      (line  91)
+* A a <1>:                               Cherry Picking.      (line  99)
 * A d:                                   Cherry Picking.      (line  54)
 * A h:                                   Cherry Picking.      (line  42)
-* A n:                                   Cherry Picking.      (line  65)
-* A s:                                   Cherry Picking.      (line  76)
-* A s <1>:                               Cherry Picking.      (line  94)
+* A n:                                   Cherry Picking.      (line  66)
+* A s:                                   Cherry Picking.      (line  77)
+* A s <1>:                               Cherry Picking.      (line  95)
 * B:                                     Bisecting.           (line   8)
 * b:                                     Blaming.             (line 102)
 * b <1>:                                 Branch Commands.     (line  12)
@@ -3051,8 +3050,8 @@ Appendix D Command Index
 * magit-cherry-donate:                   Cherry Picking.      (line  54)
 * magit-cherry-harvest:                  Cherry Picking.      (line  42)
 * magit-cherry-pick:                     Cherry Picking.      (line   8)
-* magit-cherry-spinoff:                  Cherry Picking.      (line  76)
-* magit-cherry-spinout:                  Cherry Picking.      (line  65)
+* magit-cherry-spinoff:                  Cherry Picking.      (line  77)
+* magit-cherry-spinout:                  Cherry Picking.      (line  66)
 * magit-clone:                           Cloning Repository.  (line  20)
 * magit-clone-bare:                      Cloning Repository.  (line  41)
 * magit-clone-mirror:                    Cloning Repository.  (line  46)
@@ -3334,11 +3333,11 @@ Appendix D Command Index
 * magit-section-toggle:                  Section Visibility.  (line   9)
 * magit-section-toggle-children:         Section Visibility.  (line  68)
 * magit-section-up:                      Section Movement.    (line  31)
-* magit-sequence-abort:                  Cherry Picking.      (line  98)
+* magit-sequence-abort:                  Cherry Picking.      (line  99)
 * magit-sequence-abort <1>:              Reverting.           (line  39)
-* magit-sequence-continue:               Cherry Picking.      (line  90)
+* magit-sequence-continue:               Cherry Picking.      (line  91)
 * magit-sequence-continue <1>:           Reverting.           (line  31)
-* magit-sequence-skip:                   Cherry Picking.      (line  94)
+* magit-sequence-skip:                   Cherry Picking.      (line  95)
 * magit-sequence-skip <1>:               Reverting.           (line  35)
 * magit-shell-command:                   Running Git Manually.
                                                               (line  41)
