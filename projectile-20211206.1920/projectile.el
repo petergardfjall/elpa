@@ -4,8 +4,8 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.dev>
 ;; URL: https://github.com/bbatsov/projectile
-;; Package-Version: 20211113.1943
-;; Package-Commit: 96130165ef4040426d34d877b9ee6dfd27f92fb9
+;; Package-Version: 20211206.1920
+;; Package-Commit: a0858c3079f26b564281f3a51c0ac533bc6e961b
 ;; Keywords: project, convenience
 ;; Version: 2.6.0-snapshot
 ;; Package-Requires: ((emacs "25.1"))
@@ -1047,6 +1047,9 @@ The cache is created both in memory and on the hard drive."
 
 If DEPTH is non-nil recursively descend exactly DEPTH levels below DIRECTORY and
 discover projects there."
+  (interactive
+   (list (read-directory-name "Starting directory: ")))
+
   (if (file-directory-p directory)
       (if (and (numberp depth) (> depth 0))
           ;; Ignore errors when listing files in the directory, because
@@ -1058,7 +1061,9 @@ discover projects there."
                        (not (member (file-name-nondirectory dir) '(".." "."))))
               (projectile-discover-projects-in-directory dir (1- depth))))
         (when (projectile-project-p directory)
-          (projectile-add-known-project (projectile-project-root directory))))
+          (let ((dir (abbreviate-file-name (projectile-project-root directory))))
+            (unless (member dir projectile-known-projects)
+              (projectile-add-known-project dir)))))
     (message "Project search path directory %s doesn't exist" directory)))
 
 ;;;###autoload
@@ -3016,6 +3021,11 @@ a manual COMMAND-TYPE command is created with
                                   :compile "make"
                                   :test "make test"
                                   :install "make install")
+(projectile-register-project-type 'gnumake '("GNUMakefile")
+                                  :project-file "GNUMakefile"
+                                  :compile "make"
+                                  :test "make test"
+                                  :install "make install")
 (projectile-register-project-type 'cmake '("CMakeLists.txt")
                                   :project-file "CMakeLists.txt"
                                   :configure #'projectile--cmake-configure-command
@@ -4519,7 +4529,7 @@ project of that type"
       (projectile-default-install-command (projectile-project-type))))
 
 (defun projectile-package-command (compile-dir)
-  "Retrieve the pacakge command for COMPILE-DIR.
+  "Retrieve the package command for COMPILE-DIR.
 
 The command is determined like this:
 
@@ -5020,10 +5030,8 @@ See `projectile--cleanup-known-projects'."
   "Add PROJECT-ROOT to the list of known projects."
   (interactive (list (read-directory-name "Add to known projects: ")))
   (unless (projectile-ignored-project-p project-root)
-    (setq projectile-known-projects
-          (delete-dups
-           (cons (file-name-as-directory (abbreviate-file-name project-root))
-                 projectile-known-projects)))
+    (push (file-name-as-directory (abbreviate-file-name project-root)) projectile-known-projects)
+    (delete-dups projectile-known-projects)
     (projectile-merge-known-projects)))
 
 (defun projectile-load-known-projects ()

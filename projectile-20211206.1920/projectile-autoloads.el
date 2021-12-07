@@ -51,7 +51,7 @@ Discover any projects in DIRECTORY and add them to the projectile cache.
 If DEPTH is non-nil recursively descend exactly DEPTH levels below DIRECTORY and
 discover projects there.
 
-\(fn DIRECTORY &optional DEPTH)" nil nil)
+\(fn DIRECTORY &optional DEPTH)" t nil)
 
 (autoload 'projectile-discover-projects-in-search-path "projectile" "\
 Discover projects in `projectile-project-search-path'.
