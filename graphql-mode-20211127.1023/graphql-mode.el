@@ -4,8 +4,8 @@
 
 ;; Author: David Vazquez Pua <davazp@gmail.com>
 ;; Keywords: languages
-;; Package-Version: 20210912.1544
-;; Package-Commit: 1912bd08f558e4609f4dd30ba91181b6ce7f69d9
+;; Package-Version: 20211127.1023
+;; Package-Commit: 9740e4027bd9313697d5cac5caaa5b15626ab1da
 ;; Package-Requires: ((emacs "24.3"))
 ;; Homepage: https://github.com/davazp/graphql-mode
 ;; Version: 1.0.0
@@ -345,7 +345,7 @@ This is the function to be used for the hook `completion-at-point-functions'."
        ;; the search can continue.
        ((graphql--in-arguments-p)
         (let* ((end (save-excursion (up-list) (point)))
-               (match (search-forward-regexp "\\(\\_<.+?\\_>\\):" end t)))
+               (match (search-forward-regexp "\\(\\_<[_A-Za-z][_0-9A-Za-z]*?\\_>\\):" end t)))
           (if match
               ;; unless we are inside a string or comment
               (let ((state (syntax-ppss)))
