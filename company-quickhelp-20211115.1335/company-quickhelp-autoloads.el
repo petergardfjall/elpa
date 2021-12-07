@@ -13,13 +13,17 @@
 (autoload 'company-quickhelp-local-mode "company-quickhelp" "\
 Provides documentation popups for `company-mode' using `pos-tip'.
 
-If called interactively, toggle `Company-Quickhelp-Local mode'.
-If the prefix argument is positive, enable the mode, and if it is
-zero or negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Company-Quickhelp-Local mode' mode.  If the prefix argument is
+positive, enable the mode, and if it is zero or negative, disable
+the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
+
+To check whether the minor mode is enabled in the current buffer,
+evaluate `company-quickhelp-local-mode'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -41,7 +45,11 @@ or call the function `company-quickhelp-mode'.")
 (autoload 'company-quickhelp-mode "company-quickhelp" "\
 Toggle Company-Quickhelp-Local mode in all buffers.
 With prefix ARG, enable Company-Quickhelp mode if ARG is positive; otherwise,
-disable it.  If called from Lisp, enable the mode if ARG is omitted or nil.
+disable it.
+
+If called from Lisp, toggle the mode if ARG is `toggle'.
+Enable the mode if ARG is nil, omitted, or is a positive number.
+Disable the mode if ARG is a negative number.
 
 Company-Quickhelp-Local mode is enabled in all buffers where
 `company-quickhelp-local-mode' would do it.
