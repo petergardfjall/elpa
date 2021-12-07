@@ -368,12 +368,13 @@ Must be bound to a mouse click, or EVENT will not be supplied.
 
 (autoload 'treemacs-doubleclick-action "treemacs-mouse-interface" "\
 Run the appropriate double-click action for the current node.
-In the default configuration this means to do the same as `treemacs-RET-action'.
+In the default configuration this means to expand/collapse directories and open
+files and tags in the most recently used window.
 
 This function's exact configuration is stored in
 `treemacs-doubleclick-actions-config'.
 
-Must be bound to a mouse click, or EVENT will not be supplied.
+Must be bound to a mouse double click to properly handle a click EVENT.
 
 \(fn EVENT)" t nil)
 
