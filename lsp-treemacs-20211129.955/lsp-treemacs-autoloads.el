@@ -40,7 +40,7 @@ the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
 To check whether the minor mode is enabled in the current buffer,
-evaluate `(default-value 'lsp-treemacs-sync-mode)'.
+evaluate `(default-value \\='lsp-treemacs-sync-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -75,7 +75,7 @@ With prefix 2 show both.
 
 (autoload 'lsp-treemacs-errors-list "lsp-treemacs" nil t nil)
 
-(register-definition-prefixes "lsp-treemacs" '("lsp-tree"))
+(register-definition-prefixes "lsp-treemacs" '("lsp-treemacs-"))
 
 ;;;***
 
