@@ -3,8 +3,8 @@
 ;; Author: Charl Botha
 ;; Maintainer: Andrew Christianson, Vincent Zhang
 ;; Version: 0.7.2
-;; Package-Version: 20210513.1019
-;; Package-Commit: 5856c08d6393c10951f39b993a8d7bf2d506b44f
+;; Package-Version: 20211204.1209
+;; Package-Commit: abf4d89ecf2fa0871130df5fce6065b7cf0a2721
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "6.1"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-python-ms
 ;; Keywords: languages tools
@@ -249,8 +249,8 @@ here."
                                ((executable-find "powershell")
                                 (format "powershell -noprofile -noninteractive \
   -nologo -ex bypass Expand-Archive -path '%s' -dest '%s'" temp-file install-dir))
-                               (t (user-error "Unable to extract '%s' to '%s'! \
-  Please check unzip, powershell or extract manually." temp-file install-dir)))))
+                               (t (lsp--info "Unable to extract '%s' to '%s'! \
+  Please extract manually." temp-file install-dir)))))
 
       (lsp--info "Downloading Microsoft Python Language Server...")
 
@@ -267,13 +267,12 @@ here."
          (lsp--info "Downloading Microsoft Python Language Server...done")
 
          ;; Extract the archive
-         (lsp--info "Extracting Microsoft Python Language Server...")
          (f-delete install-dir t)
 
          (lsp-async-start-process
           (lambda ()
             (when (f-exists? lsp-python-ms-executable)
-              (lsp--info "Extracting Microsoft Python Language Server...done")
+              (lsp--info "Extracted Microsoft Python Language Server")
               ;; Make the binary executable
               (chmod lsp-python-ms-executable #o755)
               ;; Start LSP if need
