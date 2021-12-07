@@ -585,6 +585,13 @@ it is disabled.
 
 ;;;***
 
+;;;### (autoloads nil "lsp-nginx" "lsp-nginx.el" (0 0 0 0))
+;;; Generated autoloads from lsp-nginx.el
+
+(register-definition-prefixes "lsp-nginx" '("lsp-nginx-server-command"))
+
+;;;***
+
 ;;;### (autoloads nil "lsp-nix" "lsp-nix.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-nix.el
 
