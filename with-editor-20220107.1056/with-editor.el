@@ -1,6 +1,6 @@
 ;;; with-editor.el --- Use the Emacsclient as $EDITOR -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2021  The Magit Project Contributors
+;; Copyright (C) 2014-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file.  If not,
 ;; see https://github.com/magit/with-editor/blob/master/AUTHORS.md.
@@ -11,7 +11,7 @@
 ;; Homepage: https://github.com/magit/with-editor
 
 ;; Package-Requires: ((emacs "24.4"))
-;; Package-Version: 3.0.5
+;; Package-Version: 3.1.1
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -644,12 +644,19 @@ may not insert the text into the PROCESS's buffer.  Then it calls
 (defconst with-editor-sleeping-editor-regexp
   "^WITH-EDITOR: \\([0-9]+\\) OPEN \\([^]+?\\)\\(?: IN \\([^\r]+?\\)\\)?\r?$")
 
+(defvar with-editor--max-incomplete-length 1000)
+
 (defun with-editor-sleeping-editor-filter (process string)
   (when-let ((incomplete (and process (process-get process 'incomplete))))
     (setq string (concat incomplete string)))
   (save-match-data
     (cond
      ((and process (not (string-match-p "\n\\'" string)))
+      (let ((length (length string)))
+        (when (> length with-editor--max-incomplete-length)
+          (setq string
+                (substring string
+                           (- length with-editor--max-incomplete-length)))))
       (process-put process 'incomplete string)
       nil)
      ((string-match with-editor-sleeping-editor-regexp string)
