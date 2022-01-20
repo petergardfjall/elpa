@@ -1,4 +1,4 @@
-;;; treemacs-projectile-autoloads.el --- automatically extracted autoloads
+;;; treemacs-projectile-autoloads.el --- automatically extracted autoloads  -*- lexical-binding: t -*-
 ;;
 ;;; Code:
 
@@ -17,7 +17,7 @@ the project's root directory.
 
 \(fn &optional ARG)" t nil)
 
-(if (fboundp 'register-definition-prefixes) (register-definition-prefixes "treemacs-projectile" '("treemacs-")))
+(register-definition-prefixes "treemacs-projectile" '("treemacs-"))
 
 ;;;***
 
@@ -25,6 +25,6 @@ the project's root directory.
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
+;; coding: utf-8-emacs-unix
 ;; End:
 ;;; treemacs-projectile-autoloads.el ends here
