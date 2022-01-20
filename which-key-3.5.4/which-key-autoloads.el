@@ -22,16 +22,16 @@ or call the function `which-key-mode'.")
 (autoload 'which-key-mode "which-key" "\
 Toggle which-key-mode.
 
-If called interactively, toggle `Which-Key mode'.  If the prefix
-argument is positive, enable the mode, and if it is zero or
-negative, disable the mode.
+This is a minor mode.  If called interactively, toggle the
+`Which-Key mode' mode.  If the prefix argument is positive,
+enable the mode, and if it is zero or negative, disable the mode.
 
 If called from Lisp, toggle the mode if ARG is `toggle'.  Enable
 the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
 To check whether the minor mode is enabled in the current buffer,
-evaluate `(default-value 'which-key-mode)'.
+evaluate `(default-value \\='which-key-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -56,27 +56,19 @@ but more functional." t nil)
 
 (autoload 'which-key-add-keymap-based-replacements "which-key" "\
 Replace the description of KEY using REPLACEMENT in KEYMAP.
-KEY should take a format suitable for use in
-`kbd'. REPLACEMENT is the string to use to describe the
-command associated with KEY in the KEYMAP. You may also use a
-cons cell of the form (STRING . COMMAND) for each REPLACEMENT,
-where STRING is the replacement string and COMMAND is a symbol
-corresponding to the intended command to be replaced. In the
-latter case, which-key will verify the intended command before
-performing the replacement. COMMAND should be nil if the binding
-corresponds to a key prefix. For example,
+KEY should take a format suitable for use in `kbd'. REPLACEMENT
+should be a cons cell of the form (STRING . COMMAND) for each
+REPLACEMENT, where STRING is the replacement string and COMMAND
+is a symbol corresponding to the intended command to be
+replaced. COMMAND can be nil if the binding corresponds to a key
+prefix. An example is
 
 \(which-key-add-keymap-based-replacements global-map
-  \"C-x w\" \"Save as\")
+  \"C-x w\" '(\"Save as\" . write-file)).
 
-and
-
-\(which-key-add-keymap-based-replacements global-map
-  \"C-x w\" '(\"Save as\" . write-file))
-
-both have the same effect for the \"C-x C-w\" key binding, but
-the latter causes which-key to verify that the key sequence is
-actually bound to write-file before performing the replacement.
+For backwards compatibility, REPLACEMENT can also be a string,
+but the above format is preferred, and the option to use a string
+for REPLACEMENT will eventually be removed.
 
 \(fn KEYMAP KEY REPLACEMENT &rest MORE)" nil nil)
 
@@ -211,7 +203,7 @@ Show all bindings in KEYMAP using which-key.
 KEYMAP is selected interactively by mode in
 `minor-mode-map-alist'." t nil)
 
-(register-definition-prefixes "which-key" '("which-key-"))
+(register-definition-prefixes "which-key" '("evil-state" "which-key-"))
 
 ;;;***
 
@@ -219,6 +211,6 @@ KEYMAP is selected interactively by mode in
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
+;; coding: utf-8-emacs-unix
 ;; End:
 ;;; which-key-autoloads.el ends here
