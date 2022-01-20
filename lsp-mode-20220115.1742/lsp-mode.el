@@ -174,12 +174,12 @@ As defined by the Language Server Protocol 3.16."
 
 (defcustom lsp-client-packages
   '(ccls lsp-actionscript lsp-ada lsp-angular lsp-bash lsp-beancount lsp-clangd lsp-clojure lsp-cmake
-         lsp-crystal lsp-csharp lsp-css lsp-d lsp-dart lsp-dhall lsp-dockerfile lsp-elm
+         lsp-crystal lsp-csharp lsp-css lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile lsp-elm
          lsp-elixir lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go lsp-graphql
          lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-java lsp-javascript lsp-json
-         lsp-kotlin lsp-ltex lsp-lua lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-metals lsp-ocaml lsp-perl lsp-php lsp-pwsh
-         lsp-pyls lsp-pylsp lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet
-         lsp-tex lsp-terraform lsp-toml lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
+         lsp-kotlin lsp-latex lsp-ltex lsp-lua lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-metals lsp-mssql lsp-ocaml lsp-pascal lsp-perl lsp-php lsp-pwsh
+         lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet lsp-sourcekit lsp-sonarlint
+         lsp-tailwindcss lsp-tex lsp-terraform lsp-toml lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
          lsp-yaml lsp-sqls lsp-svelte lsp-steep lsp-zig)
   "List of the clients to be automatically required."
   :group 'lsp-mode
@@ -335,6 +335,7 @@ the server has requested that."
     "[/\\\\]\\.ccls-cache\\'"
     "[/\\\\]\\.vscode\\'"
     "[/\\\\]\\.venv\\'"
+    "[/\\\\]\\.mypy_cache\\'"
     ;; Autotools output
     "[/\\\\]\\.deps\\'"
     "[/\\\\]build-aux\\'"
@@ -355,6 +356,8 @@ the server has requested that."
     ;; OCaml and Dune
     "[/\\\\]_opam\\'"
     "[/\\\\]_build\\'"
+    ;; Elixir
+    "[/\\\\]\\.elixir_ls\\'"
     ;; nix-direnv
     "[/\\\\]\\.direnv\\'")
   "List of regexps matching directory paths which won't be monitored when
@@ -643,8 +646,10 @@ are determined by the index of the element."
 ;; vibhavp: Should we use a lower value (5)?
 (defcustom lsp-response-timeout 10
   "Number of seconds to wait for a response from the language server before
-timing out."
-  :type 'number
+timing out. Nil if no timeout."
+  :type '(choice
+          (number :tag "Seconds")
+          (const :tag "No timeout" nil))
   :group 'lsp-mode)
 
 (defcustom lsp-tcp-connection-timeout 2
@@ -709,11 +714,13 @@ Changes take effect only when a new session is started."
                                         (".*\\.jsonc$" . "jsonc")
                                         (".*\\.php$" . "php")
                                         (".*\\.svelte$" . "svelte")
+                                        (".*\\.ebuild$" . "shellscript")
                                         (ada-mode . "ada")
                                         (nxml-mode . "xml")
                                         (sql-mode . "sql")
                                         (vimrc-mode . "vim")
                                         (sh-mode . "shellscript")
+                                        (ebuild-mode . "shellscript")
                                         (scala-mode . "scala")
                                         (julia-mode . "julia")
                                         (clojure-mode . "clojure")
@@ -803,7 +810,7 @@ Changes take effect only when a new session is started."
                                         (gfm-mode . "markdown")
                                         (beancount-mode . "beancount")
                                         (conf-toml-mode . "toml")
-                                        (org-mode . "plaintext")
+                                        (org-mode . "org")
                                         (nginx-mode . "nginx"))
   "Language id configuration.")
 
@@ -2385,7 +2392,7 @@ BINDINGS is a list of (key def desc cond)."
                             item))))
                     (when (stringp ,key)
                       (setq lsp--binding-descriptions
-                            (nconc lsp--binding-descriptions '(,key ,desc)))))))
+                            (append lsp--binding-descriptions '(,key ,desc)))))))
        macroexp-progn))
 
 (defvar lsp--describe-buffer nil)
@@ -3081,7 +3088,10 @@ If NO-WAIT is non-nil send the request as notification."
       (lsp-notify method params)
     (let* ((send-time (time-to-seconds (current-time)))
            ;; max time by which we must get a response
-           (expected-time (+ send-time lsp-response-timeout))
+           (expected-time
+            (and
+             lsp-response-timeout
+             (+ send-time lsp-response-timeout)))
            resp-result resp-error done?)
       (unwind-protect
           (progn
@@ -3093,9 +3103,11 @@ If NO-WAIT is non-nil send the request as notification."
                                :cancel-token :sync-request)
             (while (not (or resp-error resp-result))
               (catch 'lsp-done
-                (accept-process-output nil (- expected-time send-time)))
+                (accept-process-output
+                 nil
+                 (if expected-time (- expected-time send-time) 1)))
               (setq send-time (time-to-seconds (current-time)))
-              (when (< expected-time send-time)
+              (when (and expected-time (< expected-time send-time))
                 (error "Timeout while waiting for response.  Method: %s" method)))
             (setq done? t)
             (cond
@@ -3113,7 +3125,10 @@ Return same value as `lsp--while-no-input' and respecting `non-essential'."
   (if non-essential
     (let* ((send-time (time-to-seconds (current-time)))
            ;; max time by which we must get a response
-           (expected-time (+ send-time lsp-response-timeout))
+           (expected-time
+            (and
+             lsp-response-timeout
+             (+ send-time lsp-response-timeout)))
            resp-result resp-error done?)
         (unwind-protect
             (progn
@@ -3124,9 +3139,10 @@ Return same value as `lsp--while-no-input' and respecting `non-essential'."
                                  :cancel-token :sync-request)
               (while (not (or resp-error resp-result (input-pending-p)))
                 (catch 'lsp-done
-                  (sit-for (- expected-time send-time)))
+                  (sit-for
+                   (if expected-time (- expected-time send-time) 1)))
                 (setq send-time (time-to-seconds (current-time)))
-                (when (< expected-time send-time)
+                (when (and expected-time (< expected-time send-time))
                   (error "Timeout while waiting for response.  Method: %s" method)))
               (setq done? (or resp-error resp-result))
               (cond
@@ -5015,6 +5031,12 @@ In addition, each can have property:
   :group 'lsp-mode
   :type 'boolean)
 
+(defcustom lsp-enable-suggest-server-download t
+  "When non-nil enable server downloading suggestions."
+  :group 'lsp-mode
+  :type 'boolean
+  :package-version '(lsp-mode . "8.0.1"))
+
 (defun lsp--display-inline-image (mode)
   "Add image property if available."
   (let ((plist-list (cdr (assq mode lsp--display-inline-image-alist))))
@@ -5997,7 +6019,10 @@ REFERENCES? t when METHOD returns references."
 (cl-defun lsp-find-implementation (&key display-action)
   "Find implementations of the symbol under point."
   (interactive)
-  (lsp-find-locations "textDocument/implementation" nil :display-action display-action))
+  (lsp-find-locations "textDocument/implementation"
+                      nil
+                      :display-action display-action
+                      :references? t))
 
 (cl-defun lsp-find-references (&optional include-declaration &key display-action)
   "Find references of the symbol under point."
@@ -7780,7 +7805,7 @@ the next question until the queue is empty."
     (when lsp--question-queue
       (lsp--process-question-queue))))
 
-(defun lsp--matching-clients? (client)
+(defun lsp--supports-buffer? (client)
   (and
    ;; both file and client remote or both local
    (eq (---truthy? (file-remote-p (buffer-file-name)))
@@ -7808,7 +7833,7 @@ the next question until the queue is empty."
 SESSION is the currently active session. The function will also
 pick only remote enabled clients in case the FILE-NAME is on
 remote machine and vice versa."
-  (-when-let (matching-clients (lsp--filter-clients (-andfn #'lsp--matching-clients?
+  (-when-let (matching-clients (lsp--filter-clients (-andfn #'lsp--supports-buffer?
                                                             #'lsp--server-binary-present?)))
     (lsp-log "Found the following clients for %s: %s"
              (buffer-file-name)
@@ -8279,7 +8304,7 @@ The library folders are defined by each client for each of the active workspace.
                              (-sort (lambda (a _b)
                                       (-contains? lsp--last-active-workspaces a)))
                              (--first
-                              (and (-> it lsp--workspace-client lsp--matching-clients?)
+                              (and (-> it lsp--workspace-client lsp--supports-buffer?)
                                    (when-let ((library-folders-fn
                                                (-> it lsp--workspace-client lsp--client-library-folders-fn)))
                                      (-first (lambda (library-folder)
@@ -8404,7 +8429,7 @@ argument ask the user to select which language server to start."
   (when (buffer-file-name)
     (let (clients
           (matching-clients (lsp--filter-clients
-                             (-andfn #'lsp--matching-clients?
+                             (-andfn #'lsp--supports-buffer?
                                      #'lsp--server-binary-present?))))
       (cond
        (matching-clients
@@ -8422,7 +8447,7 @@ argument ask the user to select which language server to start."
                      (apply 'concat (--map (format "[%s]" (lsp--workspace-print it))
                                            lsp--buffer-workspaces)))))
        ;; look for servers which are currently being downloaded.
-       ((setq clients (lsp--filter-clients (-andfn #'lsp--matching-clients?
+       ((setq clients (lsp--filter-clients (-andfn #'lsp--supports-buffer?
                                                    #'lsp--client-download-in-progress?)))
         (lsp--info "There are language server(%s) installation in progress.
 The server(s) will be started in the buffer when it has finished."
@@ -8431,9 +8456,11 @@ The server(s) will be started in the buffer when it has finished."
                   (cl-pushnew (current-buffer) (lsp--client-buffers client)))
                 clients))
        ;; look for servers to install
-       ((setq clients (lsp--filter-clients (-andfn #'lsp--matching-clients?
-                                                   #'lsp--client-download-server-fn
-                                                   (-not #'lsp--client-download-in-progress?))))
+       ((setq clients (lsp--filter-clients
+                       (-andfn #'lsp--supports-buffer?
+                               (-const lsp-enable-suggest-server-download)
+                               #'lsp--client-download-server-fn
+                               (-not #'lsp--client-download-in-progress?))))
         (let ((client (lsp--completing-read
                        (concat "Unable to find installed server supporting this file. "
                                "The following servers could be installed automatically: ")
@@ -8443,11 +8470,23 @@ The server(s) will be started in the buffer when it has finished."
                        t)))
           (cl-pushnew (current-buffer) (lsp--client-buffers client))
           (lsp--install-server-internal client)))
+       ;; automatic installation disabled
+       ((setq clients (unless matching-clients
+                        (lsp--filter-clients (-andfn #'lsp--supports-buffer?
+                                                     #'lsp--client-download-server-fn
+                                                     (-not (-const lsp-enable-suggest-server-download))
+                                                     (-not #'lsp--server-binary-present?)))))
+        (lsp--warn "The following servers support current file but automatic download is disabled: %s
+\(If you have already installed the server check *lsp-log*)."
+                   (mapconcat (lambda (client)
+                                (symbol-name (lsp--client-server-id client)))
+                              clients
+                              " ")))
        ;; no clients present
        ((setq clients (unless matching-clients
-                        (lsp--filter-clients (-andfn #'lsp--matching-clients?
+                        (lsp--filter-clients (-andfn #'lsp--supports-buffer?
                                                      (-not #'lsp--server-binary-present?)))))
-        (lsp--warn "The following servers support current file but do not have automatic installation configuration: %s
+        (lsp--warn "The following servers support current file but do not have automatic installation: %s
 You may find the installation instructions at https://emacs-lsp.github.io/lsp-mode/page/languages.
 \(If you have already installed the server check *lsp-log*)."
                    (mapconcat (lambda (client)
@@ -8455,7 +8494,7 @@ You may find the installation instructions at https://emacs-lsp.github.io/lsp-mo
                               clients
                               " ")))
        ;; no matches
-       ((-> #'lsp--matching-clients? lsp--filter-clients not)
+       ((-> #'lsp--supports-buffer? lsp--filter-clients not)
         (lsp--error "There are no language servers supporting current mode `%s' registered with `lsp-mode'.
 This issue might be caused by:
 1. The language you are trying to use does not have built-in support in `lsp-mode'. You must install the required support manually. Examples of this are `lsp-java' or `lsp-metals'.
@@ -8539,7 +8578,7 @@ This avoids overloading the server with many files when starting Emacs."
                                     (let ((res (with-current-buffer buf
                                                  ,form)))
                                       (cond
-                                       ((eq res :optional) (propertize "NOT AVAILABLE (OPTIONAL)" 'face 'warning))
+                                       ((eq res :optional) (propertize "OPTIONAL" 'face 'warning))
                                        (res (propertize "OK" 'face 'success))
                                        (t (propertize "ERROR" 'face 'error)))))))
                  (-partition 2 checks))))))
@@ -8562,7 +8601,8 @@ This avoids overloading the server with many files when starting Emacs."
               nil)
      (error t))
    "`gc-cons-threshold' increased?" (> gc-cons-threshold 800000)
-   "Using gccemacs with emacs lisp native compilation (https://akrl.sdf.org/gccemacs.html)"
+   "Using `plist' for deserialized objects? (refer to https://emacs-lsp.github.io/lsp-mode/page/performance/#use-plists-for-deserialization)" (or lsp-use-plists :optional)
+   "Using emacs 28+ with native compilation?"
    (or (and (fboundp 'native-comp-available-p)
             (native-comp-available-p))
        :optional)))
@@ -8820,6 +8860,24 @@ This avoids overloading the server with many files when starting Emacs."
         (lsp--virtual-buffer-update-position)
         (lsp--info "Disconnected from buffer %s" file-name))
     (lsp--error "Nothing to disconnect from?")))
+
+
+
+;;;###autoload
+(defun lsp-start-plain ()
+  "Start `lsp-mode' using mininal configuration using the latest `melpa' version of the packages.
+
+In case the major-mode that you are using for "
+  (interactive)
+  (let ((start-plain (make-temp-file "plain" nil ".el")))
+    (url-copy-file "https://raw.githubusercontent.com/emacs-lsp/lsp-mode/master/scripts/lsp-start-plain.el"
+                   start-plain t)
+    (async-shell-command
+     (format "%s -q -l %s %s"
+             (expand-file-name invocation-name invocation-directory)
+             start-plain
+             (or (buffer-file-name) ""))
+     (generate-new-buffer " *lsp-start-plain*"))))
 
 
 

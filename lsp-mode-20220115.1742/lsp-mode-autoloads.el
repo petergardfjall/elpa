@@ -57,6 +57,11 @@ Explain a clang-tidy ERROR by scraping documentation from llvm.org.
 ;;;### (autoloads nil "lsp-clojure" "lsp-clojure.el" (0 0 0 0))
 ;;; Generated autoloads from lsp-clojure.el
 
+(autoload 'lsp-clojure-show-test-tree "lsp-clojure" "\
+Show a test tree and focus on it if IGNORE-FOCUS? is nil.
+
+\(fn IGNORE-FOCUS\\=\\?)" t nil)
+
 (register-definition-prefixes "lsp-clojure" '("lsp-clojure-"))
 
 ;;;***
@@ -510,6 +515,11 @@ Entry point that defers server startup until buffer is visible.
 `lsp-deferred' will wait until the buffer is visible before invoking `lsp'.
 This avoids overloading the server with many files when starting Emacs." nil nil)
 
+(autoload 'lsp-start-plain "lsp-mode" "\
+Start `lsp-mode' using mininal configuration using the latest `melpa' version of the packages.
+
+In case the major-mode that you are using for " t nil)
+
 (register-definition-prefixes "lsp-mode" '("defcustom-lsp" "lsp-" "make-lsp-client" "when-lsp-workspace" "with-lsp-workspace"))
 
 ;;;***
@@ -674,6 +684,13 @@ it is disabled.
 ;;; Generated autoloads from lsp-racket.el
 
 (register-definition-prefixes "lsp-racket" '("lsp-racket-lang"))
+
+;;;***
+
+;;;### (autoloads nil "lsp-remark" "lsp-remark.el" (0 0 0 0))
+;;; Generated autoloads from lsp-remark.el
+
+(register-definition-prefixes "lsp-remark" '("lsp-remark-server-command"))
 
 ;;;***
 
@@ -863,6 +880,6 @@ it is disabled.
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
+;; coding: utf-8-emacs-unix
 ;; End:
 ;;; lsp-mode-autoloads.el ends here
