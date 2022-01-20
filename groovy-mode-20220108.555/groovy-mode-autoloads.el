@@ -46,7 +46,7 @@ have Font Lock enabled. ${ } is expanded when in a GString
 
 (add-to-list 'auto-mode-alist '("\\.g\\(?:ant\\|roovy\\|radle\\)\\'" . groovy-mode))
 
-(add-to-list 'auto-mode-alist '("Jenkinsfile" . groovy-mode))
+(add-to-list 'auto-mode-alist '("^Jenkinsfile\\'" . groovy-mode))
 
 (add-to-list 'interpreter-mode-alist '("groovy" . groovy-mode))
 
@@ -132,6 +132,6 @@ process buffer for a list of commands.
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
+;; coding: utf-8-emacs-unix
 ;; End:
 ;;; groovy-mode-autoloads.el ends here
