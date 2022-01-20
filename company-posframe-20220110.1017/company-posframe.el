@@ -5,8 +5,8 @@
 ;; Author: Clément Pit-Claudel, Feng Shu, Lars Andersen <expez@expez.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/company-posframe
-;; Package-Version: 20211103.232
-;; Package-Commit: e104c0d0ee8db4a5fc852b3fc951e52989ee8755
+;; Package-Version: 20220110.1017
+;; Package-Commit: ede518dbe05c93b3699052204d0b7a98b2e1c0df
 ;; Version: 0.6.0
 ;; Keywords: abbrev, convenience, matching
 ;; Package-Requires: ((emacs "26.0")(company "0.9.0")(posframe "0.9.0"))
@@ -47,8 +47,20 @@
 ;; #+END_EXAMPLE
 
 ;; ** Tips
+
+;; *** How to reduce flicker when scroll up and down?
+;; In windows or MacOS system, company candidates menu may flicker
+;; when scroll up and down, the reason is that the size of posframe
+;; changing rapid, user can set the minimum width of menu to limit
+;; flicker, for example:
+
+;; #+BEGIN_EXAMPLE
+;; (setq company-tooltip-minimum-width 40)
+;; #+END_EXAMPLE
+
 ;; *** Work better with desktop.el
 ;; The below code let desktop.el not record the company-posframe-mode
+
 ;; #+BEGIN_EXAMPLE
 ;; (require 'desktop) ;this line is needed.
 ;; (push '(company-posframe-mode . nil)
