@@ -1,6 +1,6 @@
 ;;; company.el --- Modular text completion framework  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2009-2021  Free Software Foundation, Inc.
+;; Copyright (C) 2009-2022  Free Software Foundation, Inc.
 
 ;; Author: Nikolaj Schumacher
 ;; Maintainer: Dmitry Gutov <dgutov@yandex.ru>
@@ -69,7 +69,8 @@
   "Extensible inline text completion mechanism."
   :group 'abbrev
   :group 'convenience
-  :group 'matching)
+  :group 'matching
+  :link '(custom-manual "(company) Top"))
 
 (defgroup company-faces nil
   "Faces used by Company."
@@ -265,8 +266,9 @@ The visualized data is stored in `company-prefix', `company-candidates',
   :type 'integer)
 
 (defcustom company-tooltip-minimum 6
-  "The minimum height of the tooltip.
-If this many lines are not available, prefer to display the tooltip above."
+  "Ensure visibility of this number of candidates.
+When that many lines are not available between point and the bottom of the
+window, display the tooltip above point."
   :type 'integer)
 
 (defcustom company-tooltip-minimum-width 0
@@ -564,7 +566,8 @@ doesn't match anything or finish it manually, e.g. with RET."
 This can be a function do determine if a match is required.
 
 This can be overridden by the backend, if it returns t or `never' to
-`require-match'.  `company-auto-commit' also takes precedence over this."
+`require-match'.  `company-insertion-on-trigger' also takes precedence over
+this."
   :type '(choice (const :tag "Off" nil)
                  (function :tag "Predicate function")
                  (const :tag "On, if user interaction took place"
@@ -573,14 +576,21 @@ This can be overridden by the backend, if it returns t or `never' to
 
 (define-obsolete-variable-alias
   'company-auto-complete
-  'company-auto-commit
+  'company-insertion-on-trigger
   "0.9.14")
 
-(defcustom company-auto-commit nil
-  "Determines whether to auto-commit.
-If this is enabled, all characters from `company-auto-commit-chars'
-trigger insertion of the selected completion candidate.
-This can also be a function."
+(define-obsolete-variable-alias
+  'company-auto-commit
+  'company-insertion-on-trigger
+  "0.9.14")
+
+(defcustom company-insertion-on-trigger nil
+  "If enabled, allow triggering insertion of the selected candidate.
+This can also be a predicate function, for example,
+`company-explicit-action-p'.
+
+See `company-insertion-triggers' for more details on how to define
+triggers."
   :type '(choice (const :tag "Off" nil)
                  (function :tag "Predicate function")
                  (const :tag "On, if user interaction took place"
@@ -590,19 +600,27 @@ This can also be a function."
 
 (define-obsolete-variable-alias
   'company-auto-complete-chars
-  'company-auto-commit-chars
+  'company-insertion-triggers
   "0.9.14")
 
-(defcustom company-auto-commit-chars '(?\  ?\) ?.)
-  "Determines which characters trigger auto-commit.
-See `company-auto-commit'.  If this is a string, each character in it
-triggers auto-commit.  If it is a list of syntax description characters (see
-`modify-syntax-entry'), characters with any of those syntaxes do that.
+(define-obsolete-variable-alias
+  'company-auto-commit-chars
+  'company-insertion-triggers
+  "0.9.14")
 
-This can also be a function, which is called with the new input and should
-return non-nil if company should auto-commit.
+(defcustom company-insertion-triggers '(?\  ?\) ?.)
+  "Determine triggers for `company-insertion-on-trigger'.
 
-A character that is part of a valid completion never triggers auto-commit."
+If this is a string, then each character in it can trigger insertion of the
+selected candidate.  If it is a list of syntax description characters (see
+`modify-syntax-entry'), then characters with any of those syntaxes can act
+as triggers.
+
+This can also be a function, which is called with the new input.  To
+trigger insertion, the function should return a non-nil value.
+
+Note that a character that is part of a valid completion never triggers
+insertion."
   :type '(choice (string :tag "Characters")
                  (set :tag "Syntax"
                       (const :tag "Whitespace" ?\ )
@@ -1896,9 +1914,10 @@ prefix match (same case) will be prioritized."
        (eq win (selected-window))
        (eq tick (buffer-chars-modified-tick))
        (eq pos (point))
-       (when (company-auto-begin)
-         (let ((this-command 'company-idle-begin))
-           (company-post-command)))))
+       (let ((non-essential t))
+         (when (company-auto-begin)
+           (let ((this-command 'company-idle-begin))
+             (company-post-command))))))
 
 (defun company-auto-begin ()
   (and company-mode
@@ -1951,18 +1970,20 @@ prefix match (same case) will be prioritized."
                  (funcall company-require-match)
                (eq company-require-match t))))))
 
-(defun company-auto-commit-p (input)
-  "Return non-nil if INPUT should trigger auto-commit."
-  (and (if (functionp company-auto-commit)
-           (funcall company-auto-commit)
-         company-auto-commit)
-       (if (functionp company-auto-commit-chars)
-           (funcall company-auto-commit-chars input)
-         (if (consp company-auto-commit-chars)
+(defun company-insertion-on-trigger-p (input)
+  "Return non-nil if INPUT should trigger insertion.
+For more details see `company-insertion-on-trigger' and
+`company-insertion-triggers'."
+  (and (if (functionp company-insertion-on-trigger)
+           (funcall company-insertion-on-trigger)
+         company-insertion-on-trigger)
+       (if (functionp company-insertion-triggers)
+           (funcall company-insertion-triggers input)
+         (if (consp company-insertion-triggers)
              (memq (char-syntax (string-to-char input))
-                   company-auto-commit-chars)
+                   company-insertion-triggers)
            (string-match (regexp-quote (substring input 0 1))
-                          company-auto-commit-chars)))))
+                         company-insertion-triggers)))))
 
 (defun company--incremental-p ()
   (and (> (point) company-point)
@@ -2027,8 +2048,8 @@ prefix match (same case) will be prioritized."
       (company-update-candidates c)
       c)
      ((and (characterp last-command-event)
-           (company-auto-commit-p (string last-command-event)))
-      ;; auto-commit
+           (company-insertion-on-trigger-p (string last-command-event)))
+      ;; Insertion on trigger.
       (save-excursion
         (goto-char company-point)
         (company-complete-selection)
@@ -2605,6 +2626,18 @@ With ARG, move by that many elements."
         (let ((company-selection-wrap-around t)
               (current-prefix-arg arg))
           (call-interactively 'company-select-next))))))
+
+(defun company-complete-common-or-show-delayed-tooltip ()
+  "Insert the common part of all candidates, or show a tooltip."
+  (interactive)
+  (when (company-manual-begin)
+    (let ((tick (buffer-chars-modified-tick)))
+      (call-interactively 'company-complete-common)
+      (when (eq tick (buffer-chars-modified-tick))
+          (let ((company-tooltip-idle-delay 0.0))
+            (company-complete)
+            (and company-candidates
+                 (company-call-frontends 'post-command)))))))
 
 (defun company-indent-or-complete-common (arg)
   "Indent the current line or region, or complete the common part."
@@ -3521,7 +3554,9 @@ Returns a negative number if the tooltip should be displayed above point."
       ;; And Flymake (53). And Flycheck (110).
       (overlay-put ov 'priority 111)
       ;; visual-line-mode
-      (when (memq (char-before (overlay-start ov)) '(?\s ?\t))
+      (when (and (memq (char-before (overlay-start ov)) '(?\s ?\t))
+                 ;; not eob
+                 (not (nth 2 (overlay-get ov 'company-replacement-args))))
         (setq disp (concat "\n" disp)))
       ;; No (extra) prefix for the first line.
       (overlay-put ov 'line-prefix "")
