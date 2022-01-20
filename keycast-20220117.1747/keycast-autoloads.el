@@ -31,7 +31,7 @@ the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
 To check whether the minor mode is enabled in the current buffer,
-evaluate `(default-value 'keycast-mode)'.
+evaluate `(default-value \\='keycast-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
@@ -60,14 +60,14 @@ the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
 To check whether the minor mode is enabled in the current buffer,
-evaluate `(default-value 'keycast-log-mode)'.
+evaluate `(default-value \\='keycast-log-mode)'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.
 
 \(fn &optional ARG)" t nil)
 
-(register-definition-prefixes "keycast" '("keycast-" "mode-line-keycast"))
+(register-definition-prefixes "keycast" '("keycast-"))
 
 ;;;***
 
@@ -75,6 +75,6 @@ it is disabled.
 ;; version-control: never
 ;; no-byte-compile: t
 ;; no-update-autoloads: t
-;; coding: utf-8
+;; coding: utf-8-emacs-unix
 ;; End:
 ;;; keycast-autoloads.el ends here
